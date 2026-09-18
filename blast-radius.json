@@ -1,41 +1,55 @@
 {
-  "timestamp": "2026-09-18T16:52:10.798Z",
+  "timestamp": "2026-09-18T16:52:29.990Z",
   "totalServices": 5,
   "changedServices": [
-    "search"
+    "auth"
   ],
   "affectedServices": [
-    "search"
-  ],
-  "skippedServices": [
     "auth",
     "notifications",
-    "payments",
+    "payments"
+  ],
+  "skippedServices": [
+    "search",
     "shared"
   ],
   "changedFiles": [
-    "services/search/index.js"
+    "blast-radius.json",
+    "services/auth/index.js"
   ],
   "fileDetailsByService": {
-    "search": [
-      "services/search/index.js"
+    "auth": [
+      "services/auth/index.js"
     ]
   },
-  "globalFiles": [],
+  "globalFiles": [
+    "blast-radius.json"
+  ],
   "explanations": {
-    "search": "Directly modified in git diff (1 file(s))"
+    "auth": "Directly modified in git diff (1 file(s))",
+    "payments": "Tested transitively because payments -> auth (directly changed)",
+    "notifications": "Tested transitively because notifications -> payments -> auth (directly changed)"
   },
   "impactPaths": {
-    "search": [
-      "search"
+    "auth": [
+      "auth"
+    ],
+    "payments": [
+      "auth",
+      "payments"
+    ],
+    "notifications": [
+      "auth",
+      "payments",
+      "notifications"
     ]
   },
   "metrics": {
-    "affectedCount": 1,
-    "skippedCount": 4,
-    "percentSaved": 80,
-    "estimatedTimeSavedMinutes": 10,
-    "estimatedActualTimeMinutes": 2.5,
+    "affectedCount": 3,
+    "skippedCount": 2,
+    "percentSaved": 40,
+    "estimatedTimeSavedMinutes": 5,
+    "estimatedActualTimeMinutes": 7.5,
     "estimatedTotalTimeMinutes": 12.5
   }
 }
