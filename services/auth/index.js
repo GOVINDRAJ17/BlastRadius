@@ -48,3 +48,5 @@ module.exports = {
   generateToken,
   verifyToken
 };
+
+// minor token verification update
