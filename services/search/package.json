@@ -1,0 +1,9 @@
+{
+  "name": "@monorepo/search",
+  "version": "1.0.0",
+  "description": "Standalone search and indexing service",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test test/index.test.js"
+  }
+}

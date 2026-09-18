@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BlastRadius — Monorepo Selective CI Visualizer</title>
+  <meta name="description" content="Dependency-graph-based selective CI testing system for monorepos with real-time impact analysis and blast radius computation." />
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+
+  <!-- Vis-network CDN -->
+  <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Top Navigation / Header -->
+  <header class="header">
+    <div class="brand">
+      <div class="brand-icon">💥</div>
+      <div>
+        <span class="brand-title">BlastRadius</span>
+        <span class="brand-badge">Selective CI Engine</span>
+      </div>
+    </div>
+
+    <div class="header-controls">
+      <label for="scenario-select" style="font-size: 0.85rem; color: var(--text-secondary);">Simulate Scope:</label>
+      <select id="scenario-select" class="scenario-select">
+        <option value="current">Current Run (Git Diff)</option>
+        <option value="auth_only">Simulate: 'auth' Changed</option>
+        <option value="search_only">Simulate: 'search' Changed</option>
+        <option value="notifications_only">Simulate: 'notifications' Changed</option>
+        <option value="shared_only">Simulate: 'shared' Changed (Full Rebuild)</option>
+      </select>
+      <button class="btn" onclick="window.location.reload()">↻ Refresh</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container">
+    <!-- Stat Metric Cards -->
+    <section class="stats-grid">
+      <div class="stat-card total">
+        <div class="stat-header">
+          <span class="stat-title">Monorepo Services</span>
+          <span class="stat-icon">📦</span>
+        </div>
+        <div class="stat-value" id="stat-total">5</div>
+        <div class="stat-subtext">Discovered via static AST</div>
+      </div>
+
+      <div class="stat-card changed">
+        <div class="stat-header">
+          <span class="stat-title">Directly Changed</span>
+          <span class="stat-icon">🎯</span>
+        </div>
+        <div class="stat-value" id="stat-changed">1</div>
+        <div class="stat-subtext">Detected in git diff</div>
+      </div>
+
+      <div class="stat-card affected">
+        <div class="stat-header">
+          <span class="stat-title">Affected (Must Test)</span>
+          <span class="stat-icon">🧪</span>
+        </div>
+        <div class="stat-value" id="stat-affected">3</div>
+        <div class="stat-subtext">Within active blast radius</div>
+      </div>
+
+      <div class="stat-card skipped">
+        <div class="stat-header">
+          <span class="stat-title">Safely Skipped</span>
+          <span class="stat-icon">🛡️</span>
+        </div>
+        <div class="stat-value" id="stat-skipped">2</div>
+        <div class="stat-subtext">Zero downstream risk</div>
+      </div>
+
+      <div class="stat-card saved">
+        <div class="stat-header">
+          <span class="stat-title">CI Compute Saved</span>
+          <span class="stat-icon">⚡</span>
+        </div>
+        <div class="stat-value" id="stat-saved">~40%</div>
+        <div class="stat-subtext" id="stat-saved-mins">~5.0 mins saved this run</div>
+      </div>
+    </section>
+
+    <!-- Layout: Interactive Graph & Service Inspector -->
+    <div class="content-layout">
+      <!-- Vis Network Graph Panel -->
+      <section class="graph-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span>🕸️</span> Dependency Topology & Blast Impact Traversal
+          </div>
+          <div class="graph-legend">
+            <div class="legend-item">
+              <span class="legend-dot changed"></span> Changed (Root)
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot affected"></span> Transitive Test
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot skipped"></span> Skipped
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot shared"></span> Shared Core
+            </div>
+          </div>
+        </div>
+
+        <div id="network-container"></div>
+      </section>
+
+      <!-- Sidebar: Service Inspector & Monorepo Roster -->
+      <aside class="sidebar-panel">
+        <!-- Node Inspector Card -->
+        <div class="side-card">
+          <div class="side-title">
+            <span>🔍</span> Service Inspector
+          </div>
+          <div class="inspector-body">
+            <div class="inspector-field">
+              <span class="field-label">Target Service</span>
+              <span class="field-value" id="inspector-name">auth</span>
+            </div>
+
+            <div class="inspector-field">
+              <span class="field-label">CI Decision</span>
+              <div id="inspector-status">
+                <span class="badge test">Direct Change (Rebuild & Test)</span>
+              </div>
+            </div>
+
+            <div class="inspector-field">
+              <span class="field-label">Impact Explanation</span>
+              <span id="inspector-reason" style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.4;">
+                Directly modified in git diff.
+              </span>
+              <div id="inspector-path" class="path-pill" style="display: none;"></div>
+            </div>
+
+            <div class="inspector-field">
+              <span class="field-label">Upstream Dependencies (Who I depend on)</span>
+              <span class="field-value" id="inspector-deps">shared</span>
+            </div>
+
+            <div class="inspector-field">
+              <span class="field-label">Downstream Callers (Who depends on me)</span>
+              <span class="field-value" id="inspector-callers">payments</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Service Roster List -->
+        <div class="side-card">
+          <div class="side-title">
+            <span>📋</span> Monorepo Services
+          </div>
+          <div class="service-list" id="service-list">
+            <!-- Populated dynamically by app.js -->
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- History & Cumulative Savings Section -->
+    <section class="history-section">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="panel-title">
+          <span>📈</span> CI Compute History & Cumulative Savings
+        </div>
+        <div id="cumulative-saved-text" style="color: #38bdf8; font-weight: 600; font-size: 0.88rem;">
+          Total Cumulative Savings: ~32.5 CI minutes saved
+        </div>
+      </div>
+
+      <div class="history-table-container">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Run / PR</th>
+              <th>Branch</th>
+              <th>Commit</th>
+              <th>Direct Changes</th>
+              <th>Tested</th>
+              <th>Skipped</th>
+              <th>% Saved</th>
+              <th>Compute Saved</th>
+            </tr>
+          </thead>
+          <tbody id="history-table-body">
+            <!-- Populated dynamically by app.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    BlastRadius &copy; 2026 — Selective Dependency-Graph CI Testing System for Monorepos.
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>

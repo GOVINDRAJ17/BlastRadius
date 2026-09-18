@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-09-18T16:38:08.215Z",
+  "totalServices": 5,
+  "changedServices": [
+    "shared"
+  ],
+  "affectedServices": [
+    "auth",
+    "notifications",
+    "payments",
+    "search",
+    "shared"
+  ],
+  "skippedServices": [],
+  "changedFiles": [
+    "services/shared/index.js"
+  ],
+  "fileDetailsByService": {
+    "shared": [
+      "services/shared/index.js"
+    ]
+  },
+  "globalFiles": [],
+  "explanations": {
+    "auth": "Included in full rebuild: Shared core utility package was modified (full rebuild fallback)",
+    "notifications": "Included in full rebuild: Shared core utility package was modified (full rebuild fallback)",
+    "payments": "Included in full rebuild: Shared core utility package was modified (full rebuild fallback)",
+    "search": "Included in full rebuild: Shared core utility package was modified (full rebuild fallback)",
+    "shared": "Directly modified in git diff (1 file(s))"
+  },
+  "impactPaths": {
+    "auth": [
+      "shared",
+      "auth"
+    ],
+    "notifications": [
+      "shared",
+      "notifications"
+    ],
+    "payments": [
+      "shared",
+      "payments"
+    ],
+    "search": [
+      "shared",
+      "search"
+    ],
+    "shared": [
+      "shared"
+    ]
+  },
+  "metrics": {
+    "affectedCount": 5,
+    "skippedCount": 0,
+    "percentSaved": 0,
+    "estimatedTimeSavedMinutes": 0,
+    "estimatedActualTimeMinutes": 12.5,
+    "estimatedTotalTimeMinutes": 12.5
+  }
+}

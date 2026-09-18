@@ -1,0 +1,120 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-09-18T16:37:03.573Z",
+  "nodes": [
+    "auth",
+    "notifications",
+    "payments",
+    "search",
+    "shared"
+  ],
+  "serviceStats": {
+    "auth": {
+      "filesParsed": 2,
+      "totalImports": 4,
+      "internalDependencies": [
+        "shared"
+      ]
+    },
+    "notifications": {
+      "filesParsed": 2,
+      "totalImports": 5,
+      "internalDependencies": [
+        "payments",
+        "shared"
+      ]
+    },
+    "payments": {
+      "filesParsed": 2,
+      "totalImports": 6,
+      "internalDependencies": [
+        "auth",
+        "shared"
+      ]
+    },
+    "search": {
+      "filesParsed": 2,
+      "totalImports": 3,
+      "internalDependencies": []
+    },
+    "shared": {
+      "filesParsed": 2,
+      "totalImports": 3,
+      "internalDependencies": []
+    }
+  },
+  "dependencies": {
+    "auth": [
+      "shared"
+    ],
+    "notifications": [
+      "payments",
+      "shared"
+    ],
+    "payments": [
+      "auth",
+      "shared"
+    ],
+    "search": [],
+    "shared": []
+  },
+  "reverseDependencies": {
+    "auth": [
+      "payments"
+    ],
+    "notifications": [],
+    "payments": [
+      "notifications"
+    ],
+    "search": [],
+    "shared": [
+      "auth",
+      "notifications",
+      "payments"
+    ]
+  },
+  "edges": [
+    {
+      "from": "auth",
+      "to": "shared",
+      "type": "require",
+      "specifier": "../shared/index.js",
+      "sourceFile": "services/auth/index.js"
+    },
+    {
+      "from": "notifications",
+      "to": "payments",
+      "type": "require",
+      "specifier": "../payments/index.js",
+      "sourceFile": "services/notifications/index.js"
+    },
+    {
+      "from": "notifications",
+      "to": "shared",
+      "type": "require",
+      "specifier": "../shared/index.js",
+      "sourceFile": "services/notifications/index.js"
+    },
+    {
+      "from": "payments",
+      "to": "auth",
+      "type": "require",
+      "specifier": "../auth/index.js",
+      "sourceFile": "services/payments/index.js"
+    },
+    {
+      "from": "payments",
+      "to": "shared",
+      "type": "require",
+      "specifier": "../shared/index.js",
+      "sourceFile": "services/payments/index.js"
+    },
+    {
+      "from": "payments",
+      "to": "auth",
+      "type": "require",
+      "specifier": "../../auth/index.js",
+      "sourceFile": "services/payments/test/index.test.js"
+    }
+  ]
+}

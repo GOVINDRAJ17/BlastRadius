@@ -1,0 +1,9 @@
+{
+  "name": "@monorepo/auth",
+  "version": "1.0.0",
+  "description": "Authentication and authorization service",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test test/index.test.js"
+  }
+}
