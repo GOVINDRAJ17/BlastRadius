@@ -34,3 +34,5 @@ module.exports = {
   getCatalogItem,
   mockCatalog
 };
+
+// minor feature comment in search
