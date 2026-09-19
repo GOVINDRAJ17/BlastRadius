@@ -2,26 +2,29 @@ name: BlastRadius Selective CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, master]
   push:
-    branches: [main]
+    branches: [main, master]
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
+  issues: write
 
 jobs:
+  # ============================================================================
+  # JOB 1: compute-scope
+  # Calculates git diff, maps changed files to dependency graph, determines
+  # blast radius, outputs affected services array, and posts PR status comment.
+  # ============================================================================
   compute-scope:
     name: 💥 Compute Blast Radius
     runs-on: ubuntu-latest
     outputs:
-      services: ${{ steps.blast.outputs.services }}
-      has_affected: ${{ steps.blast.outputs.has_affected }}
-      affected_count: ${{ steps.blast.outputs.affected_count }}
-      skipped_count: ${{ steps.blast.outputs.skipped_count }}
-      pct_saved: ${{ steps.blast.outputs.pct_saved }}
+      services: ${{ steps.scope.outputs.services }}
+      has_affected: ${{ steps.scope.outputs.has_affected }}
     steps:
-      - name: Checkout Code with Full Git History
+      - name: Checkout Code with Full History
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -32,44 +35,54 @@ jobs:
           node-version: 22
           cache: 'npm'
 
-      - name: Install Monorepo Dependencies
+      - name: Install Dependencies
         run: npm ci || npm install
 
       - name: Build Dependency Graph
         run: node build-graph.js
 
-      - name: Calculate Blast Radius
-        id: blast
+      - name: Compute Blast Radius & Export Scope
+        id: scope
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_REF="origin/${{ github.base_ref }}"
-            HEAD_REF="origin/${{ github.head_ref }}"
-            echo "Running git diff against PR base: $BASE_REF ... $HEAD_REF"
-            node compute-blast-radius.js --base "$BASE_REF" --head "$HEAD_REF"
+            echo "Pull request event detected: target base '${{ github.base_ref }}'"
+            git fetch origin "${{ github.base_ref }}" --depth=0 2>/dev/null || true
+            CHANGED_FILES=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" 2>/dev/null || git diff --name-only "${{ github.base_ref }}...HEAD")
           else
-            echo "Running git diff for push event (HEAD~1 ... HEAD)"
-            node compute-blast-radius.js --base HEAD~1 --head HEAD
+            echo "Push event detected: ${{ github.sha }}"
+            BEFORE_SHA="${{ github.event.before }}"
+            if [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+              CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git ls-files)
+            else
+              CHANGED_FILES=$(git diff --name-only "$BEFORE_SHA" "${{ github.sha }}")
+            fi
           fi
 
-          node record-metrics.js
+          echo "Changed files detected:"
+          echo "$CHANGED_FILES"
 
-          AFFECTED_JSON=$(node -e "const d=require('./blast-radius.json'); console.log(JSON.stringify(d.affectedServices));")
-          AFFECTED_COUNT=$(node -e "const d=require('./blast-radius.json'); console.log(d.metrics.affectedCount);")
-          SKIPPED_COUNT=$(node -e "const d=require('./blast-radius.json'); console.log(d.metrics.skippedCount);")
-          PCT_SAVED=$(node -e "const d=require('./blast-radius.json'); console.log(d.metrics.percentSaved);")
+          # Convert changed files to comma-separated list for compute-blast-radius.js
+          FILES_COMMA=$(echo "$CHANGED_FILES" | tr '\n' ',' | sed 's/,$//')
+          node compute-blast-radius.js --files "$FILES_COMMA"
 
-          echo "services=$AFFECTED_JSON" >> $GITHUB_OUTPUT
-          echo "affected_count=$AFFECTED_COUNT" >> $GITHUB_OUTPUT
-          echo "skipped_count=$SKIPPED_COUNT" >> $GITHUB_OUTPUT
-          echo "pct_saved=$PCT_SAVED" >> $GITHUB_OUTPUT
+          # Record historical metrics if script exists
+          if [ -f "record-metrics.js" ]; then
+            node record-metrics.js
+          fi
+
+          # Read blast-radius.json and output results to GITHUB_OUTPUT
+          AFFECTED_JSON=$(node -e "const d=require('./blast-radius.json'); console.log(JSON.stringify(d.affectedServices || []));")
+          AFFECTED_COUNT=$(node -e "const d=require('./blast-radius.json'); console.log((d.affectedServices || []).length);")
+
+          echo "services=$AFFECTED_JSON" >> "$GITHUB_OUTPUT"
 
           if [ "$AFFECTED_COUNT" -gt 0 ]; then
-            echo "has_affected=true" >> $GITHUB_OUTPUT
+            echo "has_affected=true" >> "$GITHUB_OUTPUT"
           else
-            echo "has_affected=false" >> $GITHUB_OUTPUT
+            echo "has_affected=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Upload Blast Radius Artifacts & Dashboard
+      - name: Upload Blast Radius Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: blast-radius-report
@@ -78,6 +91,7 @@ jobs:
             blast-radius.json
             metrics-history.json
             dashboard/
+          if-no-files-found: ignore
 
       - name: Post PR Summary Comment
         if: github.event_name == 'pull_request'
@@ -85,80 +99,116 @@ jobs:
         with:
           script: |
             const fs = require('fs');
+            if (!fs.existsSync('blast-radius.json')) {
+              console.log('blast-radius.json not found, skipping comment.');
+              return;
+            }
+
             const blast = JSON.parse(fs.readFileSync('blast-radius.json', 'utf-8'));
-            const history = fs.existsSync('metrics-history.json')
-              ? JSON.parse(fs.readFileSync('metrics-history.json', 'utf-8'))
-              : null;
 
-            const affectedList = blast.affectedServices.length > 0
-              ? blast.affectedServices.map(s => {
-                  const reason = blast.explanations[s] || 'Direct/Transitive change';
-                  return `| \`${s}\` | 🔴 **TEST** | ${reason} |`;
-                }).join('\n')
-              : '| _None_ | 🟢 **CLEAN** | No services affected by this change |';
+            const directlyChanged = blast.changedServices && blast.changedServices.length > 0
+              ? blast.changedServices.map(s => `\`${s}\``).join(', ')
+              : '_None_';
 
-            const skippedList = blast.skippedServices.length > 0
-              ? blast.skippedServices.map(s => `| \`${s}\` | ⚪ **SKIPPED** | Untouched in dependency graph |`).join('\n')
-              : '| _None_ | - | All services required testing |';
+            const transitiveServices = (blast.affectedServices || []).filter(
+              s => !(blast.changedServices || []).includes(s)
+            );
 
-            const cumulativeMins = history ? history.summary.cumulativeMinutesSaved : blast.metrics.estimatedTimeSavedMinutes;
+            const transitivelyAffected = transitiveServices.length > 0
+              ? transitiveServices.map(s => `\`${s}\``).join(', ')
+              : '_None_';
 
-            const body = `## 💥 BlastRadius: Selective Monorepo CI Report
+            const skipped = blast.skippedServices && blast.skippedServices.length > 0
+              ? blast.skippedServices.map(s => `\`${s}\``).join(', ')
+              : '_None_';
 
-            ### ⏱️ Summary: **${blast.metrics.skippedCount}/${blast.totalServices} Services Skipped (~${blast.metrics.percentSaved}% CI Compute Saved)**
+            const pctSaved = blast.metrics?.percentSaved ?? 0;
+            const timeSaved = blast.metrics?.estimatedTimeSavedMinutes ?? 0;
+            const totalServices = blast.totalServices ?? 5;
+            const affectedCount = (blast.affectedServices || []).length;
+            const skippedCount = (blast.skippedServices || []).length;
 
-            | Metric | Value |
-            | :--- | :--- |
-            | 🎯 **Directly Changed** | \`${blast.changedServices.join('`, `') || 'none'}\` |
-            | ⚡ **Total Services to Test** | **${blast.metrics.affectedCount}** of ${blast.totalServices} |
-            | 🛡️ **Services Skipped** | **${blast.metrics.skippedCount}** of ${blast.totalServices} |
-            | ⏳ **Estimated Time Saved (This Run)** | **~${blast.metrics.estimatedTimeSavedMinutes} minutes** |
-            | 📈 **Cumulative CI Time Saved** | **~${cumulativeMins} minutes** |
+            let detailsTable = '';
+            if (affectedCount > 0) {
+              detailsTable = blast.affectedServices.map(s => {
+                const isDirect = (blast.changedServices || []).includes(s);
+                const badge = isDirect ? '🔴 **DIRECT**' : '🟠 **TRANSITIVE**';
+                const reason = blast.explanations?.[s] || 'Dependency propagation';
+                return `| \`${s}\` | ${badge} | ${reason} |`;
+              }).join('\n');
+            } else {
+              detailsTable = '| _None_ | 🟢 **CLEAN** | No services affected by this diff |';
+            }
+
+            let skippedDetails = '';
+            if (skippedCount > 0) {
+              skippedDetails = blast.skippedServices.map(
+                s => `| \`${s}\` | ⚪ **SKIPPED** | No incoming dependency path from changes |`
+              ).join('\n');
+            }
+
+            const commentMarker = '<!-- blastradius-selective-ci-report -->';
+            const body = `${commentMarker}
+            ## 💥 BlastRadius: Selective Monorepo CI Report
+
+            ### ⏱️ Summary: **${skippedCount}/${totalServices} Services Skipped (~${pctSaved}% CI Compute Saved)**
+
+            | Metric | Details | Count |
+            | :--- | :--- | :---: |
+            | 🎯 **Directly Changed** | ${directlyChanged} | ${(blast.changedServices || []).length} |
+            | ⚡ **Transitively Affected** | ${transitivelyAffected} | ${transitiveServices.length} |
+            | 🛡️ **Safely Skipped** | ${skipped} | ${skippedCount} |
+            | ⏳ **Estimated Time Saved** | **~${timeSaved} minutes** | **${pctSaved}%** |
 
             ---
 
-            ### 🔍 Impact Breakdown
-
-            #### Services Targeted for Build & Test
-            | Service | Status | Reason & Dependency Trail |
+            ### 🔍 Service Impact Breakdown
+            | Service | Impact Type | Reason / Propagation Trail |
             | :--- | :---: | :--- |
-            ${affectedList}
+            ${detailsTable}
 
-            #### Services Safely Skipped
+            ${skippedCount > 0 ? `
+            <details>
+            <summary><b>🛡️ View Safely Skipped Services (${skippedCount})</b></summary>
+
             | Service | Status | Reason |
             | :--- | :---: | :--- |
-            ${skippedList}
+            ${skippedDetails}
 
-            > 📊 *Interactive visual graph report uploaded as artifact \`blast-radius-report\`.*
+            </details>` : ''}
+
+            > 📊 *Full interactive topology graph report available in workflow artifacts (\`blast-radius-report\`).*
             `;
 
-            // Look for existing comment to update or create new one
-            const comments = await github.rest.issues.listComments({
+            const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
 
-            const botComment = comments.data.find(c =>
-              c.body.includes('💥 BlastRadius: Selective Monorepo CI Report')
-            );
+            const botComment = comments.find(c => c.body.includes(commentMarker));
 
             if (botComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: botComment.id,
-                body
+                body: body.trim()
               });
             } else {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body
+                body: body.trim()
               });
             }
 
+  # ============================================================================
+  # JOB 2: test-affected
+  # Dynamically executes Dockerized tests only for services identified in the
+  # blast radius. Guarded against empty matrix errors via has_affected check.
+  # ============================================================================
   test-affected:
     name: 🧪 Test [${{ matrix.service }}]
     needs: compute-scope
@@ -172,24 +222,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'npm'
-
       - name: Build Docker Container for ${{ matrix.service }}
         run: |
-          echo "Building Docker container for service: ${{ matrix.service }}"
+          echo "Building Docker image: blastradius-${{ matrix.service }}:latest"
           docker build -t blastradius-${{ matrix.service }}:latest -f services/${{ matrix.service }}/Dockerfile .
 
       - name: Execute Tests Inside Docker Container
         run: |
-          echo "Running isolated tests in container for: ${{ matrix.service }}"
+          echo "Running isolated test suite for service: ${{ matrix.service }}"
           docker run --rm blastradius-${{ matrix.service }}:latest
-
-      - name: Fallback Local Verification
-        if: failure()
-        run: |
-          echo "Container test failed. Running local fallback diagnostics..."
-          node --test services/${{ matrix.service }}/test/*.test.js

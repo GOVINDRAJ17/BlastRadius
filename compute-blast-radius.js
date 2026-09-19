@@ -30,15 +30,18 @@ function parseArgs() {
     } else if (args[i] === '--head' && args[i + 1]) {
       head = args[i + 1];
       i++;
-    } else if (args[i] === '--files' && args[i + 1]) {
-      // Allows testing or simulation without git diff
-      simulatedChangedFiles = args[i + 1].split(',').map(s => s.trim());
-      i++;
+    } else if (args[i] === '--files') {
+      if (i + 1 < args.length && !args[i + 1].startsWith('--')) {
+        simulatedChangedFiles = args[i + 1].split(',').map(s => s.trim()).filter(Boolean);
+        i++;
+      } else {
+        simulatedChangedFiles = [];
+      }
     } else if (args[i].startsWith('--files=')) {
-      simulatedChangedFiles = args[i].substring('--files='.length).split(',').map(s => s.trim());
+      simulatedChangedFiles = args[i].substring('--files='.length).split(',').map(s => s.trim()).filter(Boolean);
     } else if (!args[i].startsWith('--')) {
       if (!simulatedChangedFiles) simulatedChangedFiles = [];
-      simulatedChangedFiles.push(...args[i].split(',').map(s => s.trim()));
+      simulatedChangedFiles.push(...args[i].split(',').map(s => s.trim()).filter(Boolean));
     }
   }
 
@@ -49,7 +52,7 @@ function parseArgs() {
  * Obtains list of changed files using git diff with multiple fallbacks.
  */
 function getChangedFiles(base, head, simulatedFiles) {
-  if (simulatedFiles && simulatedFiles.length > 0) {
+  if (simulatedFiles !== null && Array.isArray(simulatedFiles)) {
     return simulatedFiles;
   }
 
