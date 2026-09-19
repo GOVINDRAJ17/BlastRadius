@@ -34,6 +34,11 @@ function parseArgs() {
       // Allows testing or simulation without git diff
       simulatedChangedFiles = args[i + 1].split(',').map(s => s.trim());
       i++;
+    } else if (args[i].startsWith('--files=')) {
+      simulatedChangedFiles = args[i].substring('--files='.length).split(',').map(s => s.trim());
+    } else if (!args[i].startsWith('--')) {
+      if (!simulatedChangedFiles) simulatedChangedFiles = [];
+      simulatedChangedFiles.push(...args[i].split(',').map(s => s.trim()));
     }
   }
 
@@ -68,7 +73,8 @@ function getChangedFiles(base, head, simulatedFiles) {
     if (statusOutput.trim().length > 0) {
       return statusOutput
         .split('\n')
-        .map(l => l.trim().substring(3))
+        .filter(l => l.length > 3)
+        .map(l => l.substring(3).trim())
         .filter(Boolean);
     }
 
@@ -79,7 +85,7 @@ function getChangedFiles(base, head, simulatedFiles) {
     console.warn(`[WARN] Git diff failed (${err.message}). Falling back to git status or empty.`);
     try {
       const st = execSync('git status --porcelain', { cwd: ROOT_DIR, encoding: 'utf-8' });
-      return st.split('\n').map(l => l.trim().substring(3)).filter(Boolean);
+      return st.split('\n').filter(l => l.length > 3).map(l => l.substring(3).trim()).filter(Boolean);
     } catch {
       return [];
     }

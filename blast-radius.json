@@ -1,30 +1,52 @@
 {
-  "timestamp": "2026-09-18T16:55:52.624Z",
+  "timestamp": "2026-09-19T13:00:26.682Z",
   "totalServices": 5,
-  "changedServices": [],
-  "affectedServices": [],
-  "skippedServices": [
+  "changedServices": [
+    "auth"
+  ],
+  "affectedServices": [
     "auth",
     "notifications",
-    "payments",
+    "payments"
+  ],
+  "skippedServices": [
     "search",
     "shared"
   ],
   "changedFiles": [
-    "ependency-graph.json"
+    "services/auth/index.js"
   ],
-  "fileDetailsByService": {},
-  "globalFiles": [
-    "ependency-graph.json"
-  ],
-  "explanations": {},
-  "impactPaths": {},
+  "fileDetailsByService": {
+    "auth": [
+      "services/auth/index.js"
+    ]
+  },
+  "globalFiles": [],
+  "explanations": {
+    "auth": "Directly modified in git diff (1 file(s))",
+    "payments": "Tested transitively because payments -> auth (directly changed)",
+    "notifications": "Tested transitively because notifications -> payments -> auth (directly changed)"
+  },
+  "impactPaths": {
+    "auth": [
+      "auth"
+    ],
+    "payments": [
+      "auth",
+      "payments"
+    ],
+    "notifications": [
+      "auth",
+      "payments",
+      "notifications"
+    ]
+  },
   "metrics": {
-    "affectedCount": 0,
-    "skippedCount": 5,
-    "percentSaved": 100,
-    "estimatedTimeSavedMinutes": 12.5,
-    "estimatedActualTimeMinutes": 0,
+    "affectedCount": 3,
+    "skippedCount": 2,
+    "percentSaved": 40,
+    "estimatedTimeSavedMinutes": 5,
+    "estimatedActualTimeMinutes": 7.5,
     "estimatedTotalTimeMinutes": 12.5
   }
 }
