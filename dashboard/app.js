@@ -95,17 +95,278 @@ const SCENARIOS = {
   }
 };
 
+const DOCKER_TEST_LOGS = {
+  auth: {
+    command: 'docker run --rm blastradius-auth:latest',
+    badge: 'EXIT CODE: 0 (PASS)',
+    badgeClass: 'pass',
+    log: `[+] Building 0.8s (15/15) FINISHED                                           docker:desktop-linux
+ => [internal] load build definition from Dockerfile                                         0.0s
+ => [internal] load metadata for docker.io/library/node:22-alpine                            0.1s
+ => CACHED [ 2/10] WORKDIR /app                                                              0.0s
+ => CACHED [ 3/10] COPY services/shared/package.json ./services/shared/                      0.0s
+ => CACHED [ 4/10] COPY services/auth/package.json ./services/auth/                          0.0s
+ => CACHED [ 5/10] WORKDIR /app/services/auth                                                0.0s
+ => CACHED [ 6/10] RUN npm install                                                           0.0s
+ => CACHED [ 7/10] WORKDIR /app                                                              0.0s
+ => CACHED [ 8/10] COPY services/shared/ ./services/shared/                                  0.0s
+ => CACHED [ 9/10] COPY services/auth/ ./services/auth/                                      0.0s
+ => CACHED [10/10] WORKDIR /app/services/auth                                                0.0s
+
+TAP version 13
+# Subtest: auth/generateToken creates valid token for valid user
+ok 1 - auth/generateToken creates valid token for valid user
+  ---
+  duration_ms: 15.75113
+  type: 'test'
+  ...
+# Subtest: auth/generateToken rejects invalid email
+ok 2 - auth/generateToken rejects invalid email
+  ---
+  duration_ms: 0.532347
+  type: 'test'
+  ...
+# Subtest: auth/verifyToken correctly validates token
+ok 3 - auth/verifyToken correctly validates token
+  ---
+  duration_ms: 0.508823
+  type: 'test'
+  ...
+# Subtest: auth/verifyToken rejects bad tokens
+ok 4 - auth/verifyToken rejects bad tokens
+  ---
+  duration_ms: 0.248665
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 159.859389`
+  },
+  payments: {
+    command: 'docker run --rm blastradius-payments:latest',
+    badge: 'EXIT CODE: 0 (PASS)',
+    badgeClass: 'pass',
+    log: `[+] Building 0.5s (17/17) FINISHED                                           docker:desktop-linux
+ => [internal] load build definition from Dockerfile                                         0.0s
+ => CACHED [ 2/12] WORKDIR /app                                                              0.0s
+ => CACHED [ 3/12] COPY services/shared/package.json ./services/shared/                      0.0s
+ => CACHED [ 4/12] COPY services/auth/package.json ./services/auth/                          0.0s
+ => CACHED [ 5/12] COPY services/payments/package.json ./services/payments/                  0.0s
+ => CACHED [ 6/12] WORKDIR /app/services/payments                                            0.0s
+ => CACHED [ 7/12] RUN npm install                                                           0.0s
+ => CACHED [ 8/12] WORKDIR /app                                                              0.0s
+ => CACHED [ 9/12] COPY services/shared/ ./services/shared/                                  0.0s
+ => CACHED [10/12] COPY services/auth/ ./services/auth/                                      0.0s
+ => CACHED [11/12] COPY services/payments/ ./services/payments/                              0.0s
+ => CACHED [12/12] WORKDIR /app/services/payments                                            0.0s
+
+TAP version 13
+# Subtest: payments/processPayment succeeds with valid token and amount
+ok 1 - payments/processPayment succeeds with valid token and amount
+  ---
+  duration_ms: 3.187724
+  type: 'test'
+  ...
+# Subtest: payments/processPayment fails with invalid token
+ok 2 - payments/processPayment fails with invalid token
+  ---
+  duration_ms: 0.331154
+  type: 'test'
+  ...
+# Subtest: payments/processPayment fails with invalid amount
+ok 3 - payments/processPayment fails with invalid amount
+  ---
+  duration_ms: 0.297392
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 134.787106`
+  },
+  notifications: {
+    command: 'docker run --rm blastradius-notifications:latest',
+    badge: 'EXIT CODE: 0 (PASS)',
+    badgeClass: 'pass',
+    log: `[+] Building 0.6s (19/19) FINISHED                                           docker:desktop-linux
+ => [internal] load build definition from Dockerfile                                         0.0s
+ => CACHED [ 2/14] WORKDIR /app                                                              0.0s
+ => CACHED [ 3/14] COPY services/shared/package.json ./services/shared/                      0.0s
+ => CACHED [ 4/14] COPY services/auth/package.json ./services/auth/                          0.0s
+ => CACHED [ 5/14] COPY services/payments/package.json ./services/payments/                  0.0s
+ => CACHED [ 6/14] COPY services/notifications/package.json ./services/notifications/        0.0s
+ => CACHED [ 7/14] WORKDIR /app/services/notifications                                       0.0s
+ => CACHED [ 8/14] RUN npm install                                                           0.0s
+ => CACHED [ 9/14] WORKDIR /app                                                              0.0s
+ => CACHED [10/14] COPY services/shared/ ./services/shared/                                  0.0s
+ => CACHED [11/14] COPY services/auth/ ./services/auth/                                      0.0s
+ => CACHED [12/14] COPY services/payments/ ./services/payments/                              0.0s
+ => CACHED [13/14] COPY services/notifications/ ./services/notifications/                    0.0s
+ => CACHED [14/14] WORKDIR /app/services/notifications                                       0.0s
+
+TAP version 13
+# Subtest: notifications/sendPaymentReceipt sends receipt for valid payload
+ok 1 - notifications/sendPaymentReceipt sends receipt for valid payload
+  ---
+  duration_ms: 2.298359
+  type: 'test'
+  ...
+# Subtest: notifications/sendPaymentReceipt rejects invalid email
+ok 2 - notifications/sendPaymentReceipt rejects invalid email
+  ---
+  duration_ms: 0.307758
+  type: 'test'
+  ...
+# Subtest: notifications/sendPaymentReceipt rejects missing transactionId
+ok 3 - notifications/sendPaymentReceipt rejects missing transactionId
+  ---
+  duration_ms: 0.163595
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 108.670793`
+  },
+  shared: {
+    command: 'docker run --rm blastradius-shared:latest',
+    badge: 'EXIT CODE: 0 (PASS)',
+    badgeClass: 'pass',
+    log: `[+] Building 0.5s (10/10) FINISHED                                           docker:desktop-linux
+ => [internal] load build definition from Dockerfile                                         0.0s
+ => CACHED [2/5] WORKDIR /app/services/shared                                                0.0s
+ => CACHED [3/5] COPY services/shared/package.json ./                                        0.0s
+ => CACHED [4/5] RUN npm install                                                             0.0s
+ => CACHED [5/5] COPY services/shared/ ./                                                    0.0s
+
+TAP version 13
+# Subtest: shared/formatCurrency formats numbers correctly
+ok 1 - shared/formatCurrency formats numbers correctly
+  ---
+  duration_ms: 2.738249
+  type: 'test'
+  ...
+# Subtest: shared/formatCurrency rejects invalid numbers
+ok 2 - shared/formatCurrency rejects invalid numbers
+  ---
+  duration_ms: 0.706632
+  type: 'test'
+  ...
+# Subtest: shared/validateEmail validates email addresses
+ok 3 - shared/validateEmail validates email addresses
+  ---
+  duration_ms: 0.302075
+  type: 'test'
+  ...
+# Subtest: shared/logger produces formatted log strings
+ok 4 - shared/logger produces formatted log strings
+  ---
+  duration_ms: 0.770203
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 113.584169`
+  },
+  search: {
+    command: 'docker run --rm blastradius-search:latest',
+    badge: 'EXIT CODE: 0 (PASS)',
+    badgeClass: 'pass',
+    log: `[+] Building 0.5s (10/10) FINISHED                                           docker:desktop-linux
+ => [internal] load build definition from Dockerfile                                         0.0s
+ => CACHED [2/5] WORKDIR /app/services/search                                                0.0s
+ => CACHED [3/5] COPY services/search/package.json ./                                        0.0s
+ => CACHED [4/5] RUN npm install                                                             0.0s
+ => CACHED [5/5] COPY services/search/ ./                                                    0.0s
+
+TAP version 13
+# Subtest: search/searchCatalog matches item names
+ok 1 - search/searchCatalog matches item names
+  ---
+  duration_ms: 1.746451
+  type: 'test'
+  ...
+# Subtest: search/searchCatalog matches tags
+ok 2 - search/searchCatalog matches tags
+  ---
+  duration_ms: 0.228172
+  type: 'test'
+  ...
+# Subtest: search/searchCatalog handles empty or null queries safely
+ok 3 - search/searchCatalog handles empty or null queries safely
+  ---
+  duration_ms: 0.72439
+  type: 'test'
+  ...
+# Subtest: search/getCatalogItem retrieves correct item
+ok 4 - search/getCatalogItem retrieves correct item
+  ---
+  duration_ms: 0.210296
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 87.764565`
+  }
+};
+
 let graphData = FALLBACK_GRAPH;
 let currentBlastRadius = null;
 let historyData = null;
 let network = null;
 
+async function fetchJSON(relPath) {
+  const candidates = [
+    relPath,
+    relPath.startsWith('../') ? relPath.substring(3) : '../' + relPath,
+    '/' + relPath.replace(/^(\.\.\/)+/, '')
+  ];
+
+  for (const p of candidates) {
+    try {
+      const res = await fetch(p);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {}
+  }
+  return null;
+}
+
 async function loadData() {
   try {
     const [graphRes, blastRes, histRes] = await Promise.all([
-      fetch('../dependency-graph.json').then(r => r.json()).catch(() => null),
-      fetch('../blast-radius.json').then(r => r.json()).catch(() => null),
-      fetch('../metrics-history.json').then(r => r.json()).catch(() => null)
+      fetchJSON('dependency-graph.json'),
+      fetchJSON('blast-radius.json'),
+      fetchJSON('metrics-history.json')
     ]);
 
     if (graphRes) graphData = graphRes;
@@ -118,7 +379,7 @@ async function loadData() {
     }
     if (histRes) historyData = histRes;
   } catch (err) {
-    console.warn('Could not fetch local JSONs, using fallback simulation state:', err);
+    console.warn('Using fallback simulation state:', err);
     currentBlastRadius = SCENARIOS.auth_only;
     SCENARIOS.current = SCENARIOS.auth_only;
   }
@@ -128,6 +389,7 @@ async function loadData() {
   renderStats();
   renderServiceList();
   renderHistory();
+  switchLogTab('auth');
 }
 
 function getNodeColor(svcName, blast) {
@@ -179,106 +441,231 @@ function buildTooltip(svcName, blast) {
   `;
 }
 
+const NODE_POSITIONS = {
+  shared:        { x: 0,    y: -140 },
+  auth:          { x: -160, y: -20 },
+  payments:      { x: -160, y: 100 },
+  notifications: { x: 0,    y: 170 },
+  search:        { x: 190,  y: 0 }
+};
+
+function renderSVGGraph(container, blast) {
+  const nodes = graphData.nodes || Object.keys(graphData.dependencies || {});
+  const edges = [];
+  for (const [src, targets] of Object.entries(graphData.dependencies || {})) {
+    for (const tgt of targets) {
+      edges.push({ from: src, to: tgt });
+    }
+  }
+
+  const svgCoords = {
+    shared:        { x: 300, y: 80 },
+    auth:          { x: 140, y: 190 },
+    payments:      { x: 140, y: 310 },
+    notifications: { x: 300, y: 420 },
+    search:        { x: 470, y: 250 }
+  };
+
+  const edgeElements = edges.map(e => {
+    const p1 = svgCoords[e.from] || { x: 200, y: 200 };
+    const p2 = svgCoords[e.to] || { x: 200, y: 200 };
+    const isActive = blast.affectedServices.includes(e.from) && blast.affectedServices.includes(e.to);
+    const stroke = isActive ? '#f59e0b' : '#4b5563';
+    const strokeWidth = isActive ? 2.5 : 1.5;
+    const strokeDash = isActive ? 'none' : '4 4';
+    const midX = (p1.x + p2.x) / 2;
+    const midY = (p1.y + p2.y) / 2;
+
+    return `
+      <g>
+        <line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-dasharray="${strokeDash}" marker-end="url(#arrow-${isActive ? 'active' : 'dim'})" />
+        <text x="${midX}" y="${midY - 4}" fill="#6b7280" font-size="9" text-anchor="middle" font-family="monospace">imports</text>
+      </g>
+    `;
+  }).join('');
+
+  const nodeElements = nodes.map(svc => {
+    const pt = svgCoords[svc] || { x: 300, y: 250 };
+    const isChanged = blast.changedServices.includes(svc);
+    const isAffected = blast.affectedServices.includes(svc);
+    const isSpecial = svc === 'shared';
+
+    let fill = '#374151';
+    let stroke = '#4b5563';
+    let statusText = '[SKIP]';
+    if (isChanged) {
+      fill = '#ef4444';
+      stroke = '#b91c1c';
+      statusText = '[CHANGED]';
+    } else if (isAffected) {
+      fill = '#f59e0b';
+      stroke = '#d97706';
+      statusText = '[TEST]';
+    }
+
+    return `
+      <g style="cursor: pointer;" onclick="selectService('${svc}')" transform="translate(${pt.x}, ${pt.y})">
+        <rect x="-60" y="-26" width="120" height="52" rx="10" fill="${fill}" stroke="${stroke}" stroke-width="${isSpecial ? 3 : 2}" filter="drop-shadow(0px 4px 10px rgba(0,0,0,0.5))" />
+        <text x="0" y="-4" fill="#ffffff" font-weight="700" font-size="13" text-anchor="middle" font-family="'Inter', sans-serif">${isSpecial ? '★ ' : ''}${svc}</text>
+        <text x="0" y="14" fill="#f3f4f6" font-weight="600" font-size="10" text-anchor="middle" font-family="'JetBrains Mono', monospace">${statusText}</text>
+      </g>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <svg width="100%" height="100%" viewBox="0 0 600 500" style="display: block; background: transparent; width: 100%; height: 520px;">
+      <defs>
+        <marker id="arrow-active" viewBox="0 0 10 10" refX="28" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 10 5 L 0 9 z" fill="#f59e0b" />
+        </marker>
+        <marker id="arrow-dim" viewBox="0 0 10 10" refX="28" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 10 5 L 0 9 z" fill="#4b5563" />
+        </marker>
+      </defs>
+      ${edgeElements}
+      ${nodeElements}
+    </svg>
+  `;
+}
+
 function renderGraph() {
   const container = document.getElementById('network-container');
+  if (!container) return;
+
   const blast = currentBlastRadius || SCENARIOS.auth_only;
 
-  const nodes = (graphData.nodes || Object.keys(graphData.dependencies)).map(svc => {
-    const isSpecial = svc === 'shared';
-    const colors = getNodeColor(svc, blast);
-    const isAffected = blast.affectedServices.includes(svc);
-    const isChanged = blast.changedServices.includes(svc);
+  // Check if vis library is loaded; if not, render SVG fallback
+  if (typeof vis === 'undefined' || !vis.Network) {
+    console.warn('vis library not ready, rendering responsive SVG graph fallback.');
+    renderSVGGraph(container, blast);
+    return;
+  }
 
-    let label = `${svc}\n${isChanged ? '[CHANGED]' : isAffected ? '[TEST]' : '[SKIP]'}`;
-    if (isSpecial) label = `★ ${label}`;
+  try {
+    const nodes = (graphData.nodes || Object.keys(graphData.dependencies || {})).map(svc => {
+      const isSpecial = svc === 'shared';
+      const colors = getNodeColor(svc, blast);
+      const isAffected = blast.affectedServices.includes(svc);
+      const isChanged = blast.changedServices.includes(svc);
 
-    return {
-      id: svc,
-      label: label,
-      color: colors,
-      shape: isSpecial ? 'hexagon' : 'box',
-      margin: 12,
-      font: {
-        color: '#ffffff',
-        face: 'Inter, sans-serif',
-        size: 13,
-        bold: true
-      },
-      borderWidth: isSpecial ? 3 : 2,
-      shadow: {
-        enabled: isAffected,
-        color: isChanged ? 'rgba(239,68,68,0.5)' : 'rgba(245,158,11,0.5)',
-        size: 14,
-        x: 0,
-        y: 0
-      },
-      title: buildTooltip(svc, blast)
+      let label = `${svc}\n${isChanged ? '[CHANGED]' : isAffected ? '[TEST]' : '[SKIP]'}`;
+      if (isSpecial) label = `★ ${label}`;
+
+      return {
+        id: svc,
+        label: label,
+        x: NODE_POSITIONS[svc]?.x ?? 0,
+        y: NODE_POSITIONS[svc]?.y ?? 0,
+        color: colors,
+        shape: isSpecial ? 'hexagon' : 'box',
+        margin: 12,
+        font: {
+          color: '#ffffff',
+          face: 'Inter, sans-serif',
+          size: 13,
+          bold: true
+        },
+        borderWidth: isSpecial ? 3 : 2,
+        shadow: {
+          enabled: isAffected,
+          color: isChanged ? 'rgba(239,68,68,0.6)' : 'rgba(245,158,11,0.6)',
+          size: 14,
+          x: 0,
+          y: 0
+        },
+        title: buildTooltip(svc, blast)
+      };
+    });
+
+    const edges = [];
+    let edgeId = 1;
+    for (const [source, depList] of Object.entries(graphData.dependencies || {})) {
+      for (const target of depList) {
+        const activePath = blast.affectedServices.includes(source) && blast.affectedServices.includes(target);
+
+        edges.push({
+          id: edgeId++,
+          from: source,
+          to: target,
+          arrows: {
+            to: { enabled: true, scaleFactor: 0.9 }
+          },
+          label: 'imports',
+          font: { color: '#9ca3af', size: 10, align: 'middle' },
+          color: {
+            color: activePath ? '#f59e0b' : '#4b5563',
+            highlight: '#818cf8',
+            hover: '#93c5fd'
+          },
+          width: activePath ? 2.5 : 1.2,
+          dashes: !activePath,
+          smooth: { type: 'cubicBezier', roundness: 0.25 }
+        });
+      }
+    }
+
+    const data = {
+      nodes: new vis.DataSet(nodes),
+      edges: new vis.DataSet(edges)
     };
-  });
 
-  const edges = [];
-  let edgeId = 1;
-  for (const [source, depList] of Object.entries(graphData.dependencies)) {
-    for (const target of depList) {
-      // Directed edge: source imports from target
-      // Highlight if active blast path
-      const activePath = blast.affectedServices.includes(source) && blast.affectedServices.includes(target);
-
-      edges.push({
-        id: edgeId++,
-        from: source,
-        to: target,
-        arrows: {
-          to: { enabled: true, scaleFactor: 0.9 }
-        },
-        label: 'imports',
-        font: { color: '#6b7280', size: 10, align: 'middle' },
-        color: {
-          color: activePath ? '#f59e0b' : '#4b5563',
-          highlight: '#818cf8',
-          hover: '#93c5fd'
-        },
-        width: activePath ? 2.5 : 1.2,
-        dashes: !activePath,
-        smooth: { type: 'cubicBezier', roundness: 0.25 }
-      });
-    }
-  }
-
-  const data = {
-    nodes: new vis.DataSet(nodes),
-    edges: new vis.DataSet(edges)
-  };
-
-  const options = {
-    physics: {
-      solver: 'forceAtlas2Based',
-      forceAtlas2Based: {
-        gravitationalConstant: -70,
-        centralGravity: 0.015,
-        springLength: 130,
-        springConstant: 0.08,
-        damping: 0.85
+    const options = {
+      autoResize: true,
+      height: '520px',
+      width: '100%',
+      physics: {
+        enabled: false // Static coordinates ensure instant, rock-solid, centered rendering
       },
-      stabilization: { iterations: 150 }
-    },
-    interaction: {
-      hover: true,
-      tooltipDelay: 100,
-      zoomView: true
-    }
-  };
+      interaction: {
+        hover: true,
+        tooltipDelay: 100,
+        zoomView: false, // Prevents mouse wheel from trapping or hijacking page scroll!
+        dragView: true,
+        dragNodes: true,
+        keyboard: false,
+        selectable: true
+      }
+    };
 
-  if (network) {
-    network.destroy();
+    if (network) {
+      try { network.destroy(); } catch {}
+    }
+
+    container.innerHTML = '';
+    network = new vis.Network(container, data, options);
+
+    network.on('click', function (params) {
+      if (params.nodes && params.nodes.length > 0) {
+        selectService(params.nodes[0]);
+      }
+    });
+
+    // Re-fit canvas into view cleanly without jumping scroll
+    setTimeout(() => {
+      if (network) {
+        network.fit({ animation: false });
+      }
+    }, 50);
+
+  } catch (err) {
+    console.error('vis-network initialization error, falling back to SVG:', err);
+    renderSVGGraph(container, blast);
   }
-  network = new vis.Network(container, data, options);
+}
 
-  network.on('click', function (params) {
-    if (params.nodes.length > 0) {
-      const selectedSvc = params.nodes[0];
-      selectService(selectedSvc);
-    }
+function zoomGraph(factor) {
+  if (!network) return;
+  const currentScale = network.getScale();
+  network.moveTo({
+    scale: currentScale * factor,
+    animation: { duration: 200, easingFunction: 'easeInOutQuad' }
+  });
+}
+
+function fitGraph() {
+  if (!network) return;
+  network.fit({
+    animation: { duration: 300, easingFunction: 'easeInOutQuad' }
   });
 }
 
@@ -355,10 +742,38 @@ function selectService(svcName) {
     pathEl.style.display = 'none';
   }
 
-  // Highlight in vis-network
+  // Highlight in vis-network without stealing scroll
   if (network) {
     network.selectNodes([svcName]);
   }
+
+  // Also switch test log tab to this service if available
+  if (DOCKER_TEST_LOGS[svcName]) {
+    switchLogTab(svcName);
+  }
+}
+
+function switchLogTab(svcName) {
+  const logData = DOCKER_TEST_LOGS[svcName];
+  if (!logData) return;
+
+  // Update tabs active state
+  const tabs = document.querySelectorAll('#log-tabs .tab-btn');
+  tabs.forEach(btn => {
+    if (btn.textContent.startsWith(svcName)) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  const titleEl = document.getElementById('terminal-title');
+  const badgeEl = document.getElementById('terminal-badge');
+  const outputEl = document.getElementById('terminal-output');
+
+  if (titleEl) titleEl.textContent = logData.command;
+  if (badgeEl) badgeEl.textContent = logData.badge;
+  if (outputEl) outputEl.textContent = logData.log;
 }
 
 function renderHistory() {
@@ -432,14 +847,19 @@ function initUI() {
     renderGraph();
     renderStats();
     renderServiceList();
-    // Default select first affected or changed
     const firstSvc = currentBlastRadius.changedServices[0] || currentBlastRadius.affectedServices[0] || 'auth';
     selectService(firstSvc);
   });
 
-  // Select first service by default
+  // Select first service by default without auto-scrolling
   const defaultSvc = currentBlastRadius?.changedServices?.[0] || 'auth';
   selectService(defaultSvc);
 }
+
+// Global exposure for HTML onclick handlers
+window.zoomGraph = zoomGraph;
+window.fitGraph = fitGraph;
+window.switchLogTab = switchLogTab;
+window.selectService = selectService;
 
 window.addEventListener('DOMContentLoaded', loadData);

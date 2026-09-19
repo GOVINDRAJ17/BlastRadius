@@ -1,52 +1,60 @@
 {
-  "timestamp": "2026-09-19T13:00:26.682Z",
+  "timestamp": "2026-09-19T19:00:10.919Z",
   "totalServices": 5,
   "changedServices": [
-    "auth"
+    "shared"
   ],
   "affectedServices": [
     "auth",
     "notifications",
-    "payments"
-  ],
-  "skippedServices": [
+    "payments",
     "search",
     "shared"
   ],
+  "skippedServices": [],
   "changedFiles": [
-    "services/auth/index.js"
+    "services/shared/index.js"
   ],
   "fileDetailsByService": {
-    "auth": [
-      "services/auth/index.js"
+    "shared": [
+      "services/shared/index.js"
     ]
   },
   "globalFiles": [],
   "explanations": {
-    "auth": "Directly modified in git diff (1 file(s))",
-    "payments": "Tested transitively because payments -> auth (directly changed)",
-    "notifications": "Tested transitively because notifications -> payments -> auth (directly changed)"
+    "auth": "Included in full rebuild: Shared core utility package was modified (full rebuild fallback)",
+    "notifications": "Included in full rebuild: Shared core utility package was modified (full rebuild fallback)",
+    "payments": "Included in full rebuild: Shared core utility package was modified (full rebuild fallback)",
+    "search": "Included in full rebuild: Shared core utility package was modified (full rebuild fallback)",
+    "shared": "Directly modified in git diff (1 file(s))"
   },
   "impactPaths": {
     "auth": [
+      "shared",
       "auth"
     ],
+    "notifications": [
+      "shared",
+      "notifications"
+    ],
     "payments": [
-      "auth",
+      "shared",
       "payments"
     ],
-    "notifications": [
-      "auth",
-      "payments",
-      "notifications"
+    "search": [
+      "shared",
+      "search"
+    ],
+    "shared": [
+      "shared"
     ]
   },
   "metrics": {
-    "affectedCount": 3,
-    "skippedCount": 2,
-    "percentSaved": 40,
-    "estimatedTimeSavedMinutes": 5,
-    "estimatedActualTimeMinutes": 7.5,
+    "affectedCount": 5,
+    "skippedCount": 0,
+    "percentSaved": 0,
+    "estimatedTimeSavedMinutes": 0,
+    "estimatedActualTimeMinutes": 12.5,
     "estimatedTotalTimeMinutes": 12.5
   }
 }

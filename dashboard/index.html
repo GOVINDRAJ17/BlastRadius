@@ -11,8 +11,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 
-  <!-- Vis-network CDN -->
-  <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <!-- Vis-network: Local first with CDN fallback -->
+  <script type="text/javascript" src="vis-network.min.js"></script>
+  <script type="text/javascript">
+    if (typeof vis === 'undefined') {
+      document.write('<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"><\/script>');
+    }
+  </script>
 
   <!-- Stylesheet -->
   <link rel="stylesheet" href="style.css" />
@@ -99,18 +104,25 @@
           <div class="panel-title">
             <span>🕸️</span> Dependency Topology & Blast Impact Traversal
           </div>
-          <div class="graph-legend">
-            <div class="legend-item">
-              <span class="legend-dot changed"></span> Changed (Root)
+          <div style="display: flex; gap: 0.85rem; align-items: center;">
+            <div class="graph-legend">
+              <div class="legend-item">
+                <span class="legend-dot changed"></span> Changed (Root)
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot affected"></span> Transitive Test
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot skipped"></span> Skipped
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot shared"></span> Shared Core
+              </div>
             </div>
-            <div class="legend-item">
-              <span class="legend-dot affected"></span> Transitive Test
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot skipped"></span> Skipped
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot shared"></span> Shared Core
+            <div class="graph-controls">
+              <button class="icon-btn" id="btn-zoom-in" title="Zoom In" onclick="zoomGraph(1.2)">➕</button>
+              <button class="icon-btn" id="btn-zoom-out" title="Zoom Out" onclick="zoomGraph(0.8)">➖</button>
+              <button class="icon-btn" id="btn-zoom-fit" title="Fit All Nodes" onclick="fitGraph()">⛶</button>
             </div>
           </div>
         </div>
@@ -169,6 +181,34 @@
         </div>
       </aside>
     </div>
+
+    <!-- Docker CI Test Execution Logs Section -->
+    <section class="test-logs-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <div class="panel-title">
+          <span>🐳</span> Isolated Docker Test Execution Logs (Native Matrix Simulation)
+        </div>
+        <div class="log-service-tabs" id="log-tabs">
+          <button class="tab-btn active" onclick="switchLogTab('auth')">auth (4/4 passed)</button>
+          <button class="tab-btn" onclick="switchLogTab('payments')">payments (3/3 passed)</button>
+          <button class="tab-btn" onclick="switchLogTab('notifications')">notifications (3/3 passed)</button>
+          <button class="tab-btn" onclick="switchLogTab('shared')">shared (4/4 passed)</button>
+          <button class="tab-btn" onclick="switchLogTab('search')">search (4/4 passed)</button>
+        </div>
+      </div>
+      <div class="terminal-container">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <span class="terminal-title" id="terminal-title">docker run --rm blastradius-auth:latest</span>
+          <span class="terminal-badge" id="terminal-badge">EXIT CODE: 0 (PASS)</span>
+        </div>
+        <pre class="terminal-body" id="terminal-output"><code>Loading test run output...</code></pre>
+      </div>
+    </section>
 
     <!-- History & Cumulative Savings Section -->
     <section class="history-section">

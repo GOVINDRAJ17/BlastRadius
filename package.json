@@ -8,7 +8,7 @@
     "blast-radius": "node compute-blast-radius.js",
     "record-metrics": "node record-metrics.js",
     "test:all": "node --test services/*/test/*.test.js",
-    "dashboard": "node -e \"const http=require('http'),fs=require('fs'),path=require('path'); http.createServer((req,res)=>{ let p=path.join(__dirname, req.url==='/'?'dashboard/index.html':req.url); if(!fs.existsSync(p)) p=path.join(__dirname,'dashboard',req.url); if(fs.existsSync(p)){ res.writeHead(200,{'Content-Type': p.endsWith('.html')?'text/html':p.endsWith('.json')?'application/json':p.endsWith('.css')?'text/css':'application/javascript'}); fs.createReadStream(p).pipe(res); } else { res.writeHead(404); res.end('Not found'); } }).listen(3000,()=>console.log('Dashboard running at http://localhost:3000/dashboard/index.html'));\""
+    "dashboard": "node serve-dashboard.js"
   },
   "keywords": [
     "monorepo",
