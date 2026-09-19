@@ -118,14 +118,35 @@
       "percentSaved": 0,
       "timeSavedMinutes": 0,
       "actualTimeMinutes": 12.5
+    },
+    {
+      "runId": "run-mu779p0z",
+      "prNumber": null,
+      "commitSha": "local",
+      "author": "dev",
+      "branch": "main",
+      "timestamp": "2026-09-18T16:55:53.075Z",
+      "changedServices": [],
+      "affectedServices": [],
+      "skippedServices": [
+        "auth",
+        "notifications",
+        "payments",
+        "search",
+        "shared"
+      ],
+      "totalServices": 5,
+      "percentSaved": 100,
+      "timeSavedMinutes": 12.5,
+      "actualTimeMinutes": 0
     }
   ],
   "summary": {
-    "totalRuns": 5,
+    "totalRuns": 6,
     "totalServicesTested": 12,
-    "totalServicesSkipped": 13,
-    "cumulativeMinutesSaved": 32.5,
-    "cumulativeHoursSaved": 0.54,
-    "overallPercentSaved": 52
+    "totalServicesSkipped": 18,
+    "cumulativeMinutesSaved": 45,
+    "cumulativeHoursSaved": 0.75,
+    "overallPercentSaved": 60
   }
 }
