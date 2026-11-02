@@ -1,57 +1,26 @@
 {
-  "timestamp": "2026-11-02T21:41:02.193Z",
+  "timestamp": "2026-11-02T21:41:53.939Z",
   "totalServices": 5,
   "changedServices": [],
-  "affectedServices": [
+  "affectedServices": [],
+  "skippedServices": [
     "auth",
     "notifications",
     "payments",
     "search",
     "shared"
   ],
-  "skippedServices": [],
-  "changedFiles": [
-    "package.json"
-  ],
+  "changedFiles": [],
   "fileDetailsByService": {},
-  "globalFiles": [
-    "package.json"
-  ],
-  "explanations": {
-    "auth": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)",
-    "notifications": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)",
-    "payments": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)",
-    "search": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)",
-    "shared": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)"
-  },
-  "impactPaths": {
-    "auth": [
-      "root",
-      "auth"
-    ],
-    "notifications": [
-      "root",
-      "notifications"
-    ],
-    "payments": [
-      "root",
-      "payments"
-    ],
-    "search": [
-      "root",
-      "search"
-    ],
-    "shared": [
-      "root",
-      "shared"
-    ]
-  },
+  "globalFiles": [],
+  "explanations": {},
+  "impactPaths": {},
   "metrics": {
-    "affectedCount": 5,
-    "skippedCount": 0,
-    "percentSaved": 0,
-    "estimatedTimeSavedMinutes": 0,
-    "estimatedActualTimeMinutes": 12.5,
+    "affectedCount": 0,
+    "skippedCount": 5,
+    "percentSaved": 100,
+    "estimatedTimeSavedMinutes": 12.5,
+    "estimatedActualTimeMinutes": 0,
     "estimatedTotalTimeMinutes": 12.5
   }
 }
