@@ -369,10 +369,11 @@ let isUIInitialized = false;
 
 async function loadData() {
   try {
-    const [graphRes, blastRes, histRes] = await Promise.all([
+    const [graphRes, blastRes, histRes, supabaseRes] = await Promise.all([
       fetchJSON('dependency-graph.json'),
       fetchJSON('blast-radius.json'),
-      fetchJSON('metrics-history.json')
+      fetchJSON('metrics-history.json'),
+      fetchJSON('/api/ci-runs')
     ]);
 
     if (graphRes) graphData = graphRes;
@@ -384,6 +385,10 @@ async function loadData() {
       SCENARIOS.current = SCENARIOS.auth_only;
     }
     if (histRes) historyData = histRes;
+    if (supabaseRes && Array.isArray(supabaseRes.runs) && supabaseRes.runs.length > 0) {
+      if (!historyData) historyData = { runs: [], summary: {} };
+      historyData.runs = supabaseRes.runs;
+    }
   } catch (err) {
     console.warn('Using fallback simulation state:', err);
     currentBlastRadius = SCENARIOS.auth_only;

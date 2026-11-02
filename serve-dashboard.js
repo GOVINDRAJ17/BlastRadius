@@ -115,6 +115,19 @@ function resolveFilePath(urlPath) {
 function handleRequest(req, res) {
   const cleanUrl = req.url.split('?')[0];
 
+  // API: Fetch Supabase CI runs
+  if (cleanUrl === '/api/ci-runs') {
+    try {
+      const handler = require('./api/ci-runs.js');
+      // Mock setHeader for Node http.ServerResponse if needed
+      return handler(req, res);
+    } catch (apiErr) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: apiErr.message }));
+      return;
+    }
+  }
+
   // API: Force refresh & recompute
   if (cleanUrl === '/api/refresh') {
     const result = recomputeAll();

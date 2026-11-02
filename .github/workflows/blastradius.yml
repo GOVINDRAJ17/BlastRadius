@@ -43,6 +43,13 @@ jobs:
 
       - name: Compute Blast Radius & Export Scope
         id: scope
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CI_REPORT_SECRET: ${{ secrets.CI_REPORT_SECRET }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "Pull request event detected: target base '${{ github.base_ref }}'"
@@ -68,6 +75,11 @@ jobs:
           # Record historical metrics if script exists
           if [ -f "record-metrics.js" ]; then
             node record-metrics.js
+          fi
+
+          # Sync live CI report to Supabase database
+          if [ -f "record-metrics-supabase.js" ]; then
+            node record-metrics-supabase.js || true
           fi
 
           # Read blast-radius.json and output results to GITHUB_OUTPUT
