@@ -232,14 +232,38 @@
       "percentSaved": 80,
       "timeSavedMinutes": 10,
       "actualTimeMinutes": 2.5
+    },
+    {
+      "runId": "run-mvzs8d61",
+      "prNumber": null,
+      "commitSha": "local",
+      "author": "dev",
+      "branch": "main",
+      "timestamp": "2026-11-02T21:39:58.249Z",
+      "changedServices": [
+        "search"
+      ],
+      "affectedServices": [
+        "search"
+      ],
+      "skippedServices": [
+        "auth",
+        "notifications",
+        "payments",
+        "shared"
+      ],
+      "totalServices": 5,
+      "percentSaved": 80,
+      "timeSavedMinutes": 10,
+      "actualTimeMinutes": 2.5
     }
   ],
   "summary": {
-    "totalRuns": 10,
-    "totalServicesTested": 17,
-    "totalServicesSkipped": 33,
-    "cumulativeMinutesSaved": 82.5,
-    "cumulativeHoursSaved": 1.38,
-    "overallPercentSaved": 66
+    "totalRuns": 11,
+    "totalServicesTested": 18,
+    "totalServicesSkipped": 37,
+    "cumulativeMinutesSaved": 92.5,
+    "cumulativeHoursSaved": 1.54,
+    "overallPercentSaved": 67
   }
 }
