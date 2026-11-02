@@ -1,0 +1,221 @@
+{
+  "runs": [
+    {
+      "runId": "pr-101",
+      "prNumber": 101,
+      "commitSha": "9f2a1b4",
+      "author": "alex",
+      "branch": "feature/search-filter",
+      "timestamp": "2026-09-14T16:38:30.864Z",
+      "changedServices": [
+        "search"
+      ],
+      "affectedServices": [
+        "search"
+      ],
+      "skippedServices": [
+        "auth",
+        "notifications",
+        "payments",
+        "shared"
+      ],
+      "totalServices": 5,
+      "percentSaved": 80,
+      "timeSavedMinutes": 10,
+      "actualTimeMinutes": 2.5
+    },
+    {
+      "runId": "pr-102",
+      "prNumber": 102,
+      "commitSha": "3c8e4d1",
+      "author": "sarah",
+      "branch": "fix/token-expiry",
+      "timestamp": "2026-09-15T16:38:30.865Z",
+      "changedServices": [
+        "auth"
+      ],
+      "affectedServices": [
+        "auth",
+        "notifications",
+        "payments"
+      ],
+      "skippedServices": [
+        "search",
+        "shared"
+      ],
+      "totalServices": 5,
+      "percentSaved": 40,
+      "timeSavedMinutes": 5,
+      "actualTimeMinutes": 7.5
+    },
+    {
+      "runId": "pr-103",
+      "prNumber": 103,
+      "commitSha": "7e1d5a8",
+      "author": "jordan",
+      "branch": "feature/payment-webhook",
+      "timestamp": "2026-09-16T16:38:30.865Z",
+      "changedServices": [
+        "payments"
+      ],
+      "affectedServices": [
+        "notifications",
+        "payments"
+      ],
+      "skippedServices": [
+        "auth",
+        "search",
+        "shared"
+      ],
+      "totalServices": 5,
+      "percentSaved": 60,
+      "timeSavedMinutes": 7.5,
+      "actualTimeMinutes": 5
+    },
+    {
+      "runId": "pr-104",
+      "prNumber": 104,
+      "commitSha": "1a9f0e2",
+      "author": "elena",
+      "branch": "perf/email-digest",
+      "timestamp": "2026-09-17T16:38:30.865Z",
+      "changedServices": [
+        "notifications"
+      ],
+      "affectedServices": [
+        "notifications"
+      ],
+      "skippedServices": [
+        "auth",
+        "payments",
+        "search",
+        "shared"
+      ],
+      "totalServices": 5,
+      "percentSaved": 80,
+      "timeSavedMinutes": 10,
+      "actualTimeMinutes": 2.5
+    },
+    {
+      "runId": "run-mu76ncup",
+      "prNumber": null,
+      "commitSha": "local",
+      "author": "dev",
+      "branch": "main",
+      "timestamp": "2026-09-18T16:38:30.865Z",
+      "changedServices": [
+        "shared"
+      ],
+      "affectedServices": [
+        "auth",
+        "notifications",
+        "payments",
+        "search",
+        "shared"
+      ],
+      "skippedServices": [],
+      "totalServices": 5,
+      "percentSaved": 0,
+      "timeSavedMinutes": 0,
+      "actualTimeMinutes": 12.5
+    },
+    {
+      "runId": "run-mu779p0z",
+      "prNumber": null,
+      "commitSha": "local",
+      "author": "dev",
+      "branch": "main",
+      "timestamp": "2026-09-18T16:55:53.075Z",
+      "changedServices": [],
+      "affectedServices": [],
+      "skippedServices": [
+        "auth",
+        "notifications",
+        "payments",
+        "search",
+        "shared"
+      ],
+      "totalServices": 5,
+      "percentSaved": 100,
+      "timeSavedMinutes": 12.5,
+      "actualTimeMinutes": 0
+    },
+    {
+      "runId": "run-mu8eavq8",
+      "prNumber": null,
+      "commitSha": "local",
+      "author": "dev",
+      "branch": "main",
+      "timestamp": "2026-09-19T13:00:31.904Z",
+      "changedServices": [
+        "auth"
+      ],
+      "affectedServices": [
+        "auth",
+        "notifications",
+        "payments"
+      ],
+      "skippedServices": [
+        "search",
+        "shared"
+      ],
+      "totalServices": 5,
+      "percentSaved": 40,
+      "timeSavedMinutes": 5,
+      "actualTimeMinutes": 7.5
+    },
+    {
+      "runId": "run-muzxq7sg",
+      "prNumber": null,
+      "commitSha": "local",
+      "author": "dev",
+      "branch": "main",
+      "timestamp": "2026-10-08T19:34:06.832Z",
+      "changedServices": [],
+      "affectedServices": [],
+      "skippedServices": [
+        "auth",
+        "notifications",
+        "payments",
+        "search",
+        "shared"
+      ],
+      "totalServices": 5,
+      "percentSaved": 100,
+      "timeSavedMinutes": 12.5,
+      "actualTimeMinutes": 0
+    },
+    {
+      "runId": "run-mvzmzg58",
+      "prNumber": null,
+      "commitSha": "local",
+      "author": "dev",
+      "branch": "main",
+      "timestamp": "2026-11-02T19:13:04.124Z",
+      "changedServices": [
+        "search"
+      ],
+      "affectedServices": [
+        "search"
+      ],
+      "skippedServices": [
+        "auth",
+        "notifications",
+        "payments",
+        "shared"
+      ],
+      "totalServices": 5,
+      "percentSaved": 80,
+      "timeSavedMinutes": 10,
+      "actualTimeMinutes": 2.5
+    }
+  ],
+  "summary": {
+    "totalRuns": 9,
+    "totalServicesTested": 16,
+    "totalServicesSkipped": 29,
+    "cumulativeMinutesSaved": 72.5,
+    "cumulativeHoursSaved": 1.21,
+    "overallPercentSaved": 64
+  }
+}

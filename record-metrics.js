@@ -148,6 +148,14 @@ function recordCurrentRun(customMeta = {}) {
 
   fs.writeFileSync(HISTORY_FILE, JSON.stringify(historyData, null, 2), 'utf-8');
   console.log(`📊 Recorded run to ${path.relative(ROOT_DIR, HISTORY_FILE)}`);
+
+  const dashboardDir = path.join(ROOT_DIR, 'dashboard');
+  if (fs.existsSync(dashboardDir)) {
+    const dashboardOutputFile = path.join(dashboardDir, 'metrics-history.json');
+    fs.writeFileSync(dashboardOutputFile, JSON.stringify(historyData, null, 2), 'utf-8');
+    console.log(`📊 Copied metrics history to ${path.relative(ROOT_DIR, dashboardOutputFile)}`);
+  }
+
   console.log(`   Cumulative Time Saved to Date: ${historyData.summary.cumulativeMinutesSaved} mins (~${historyData.summary.cumulativeHoursSaved} hrs) across ${historyData.summary.totalRuns} runs`);
 
   return historyData;

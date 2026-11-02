@@ -344,15 +344,19 @@ let historyData = null;
 let network = null;
 
 async function fetchJSON(relPath) {
+  const t = Date.now();
   const candidates = [
     relPath,
+    './' + relPath,
     relPath.startsWith('../') ? relPath.substring(3) : '../' + relPath,
-    '/' + relPath.replace(/^(\.\.\/)+/, '')
+    '/' + relPath.replace(/^(\.\.\/)+/, ''),
+    'dashboard/' + relPath.replace(/^(\.\.\/)+/, '')
   ];
 
   for (const p of candidates) {
     try {
-      const res = await fetch(p);
+      const url = p.includes('?') ? `${p}&_t=${t}` : `${p}?_t=${t}`;
+      const res = await fetch(url, { cache: 'no-store' });
       if (res.ok) {
         return await res.json();
       }
@@ -360,6 +364,8 @@ async function fetchJSON(relPath) {
   }
   return null;
 }
+
+let isUIInitialized = false;
 
 async function loadData() {
   try {
@@ -384,12 +390,24 @@ async function loadData() {
     SCENARIOS.current = SCENARIOS.auth_only;
   }
 
-  initUI();
+  if (!isUIInitialized) {
+    initUI();
+    setupLiveUpdates();
+    isUIInitialized = true;
+  } else {
+    // If scenario selector is on "current", update currentBlastRadius to latest
+    const select = document.getElementById('scenario-select');
+    if (select && select.value === 'current' && SCENARIOS.current) {
+      currentBlastRadius = SCENARIOS.current;
+    }
+  }
+
   renderGraph();
   renderStats();
   renderServiceList();
   renderHistory();
-  switchLogTab('auth');
+  const activeSvc = currentBlastRadius?.changedServices?.[0] || currentBlastRadius?.affectedServices?.[0] || 'auth';
+  selectService(activeSvc);
 }
 
 function getNodeColor(svcName, blast) {
@@ -856,10 +874,50 @@ function initUI() {
   selectService(defaultSvc);
 }
 
+function setupLiveUpdates() {
+  if (typeof EventSource !== 'undefined') {
+    try {
+      const es = new EventSource('/api/live');
+      es.addEventListener('update', (e) => {
+        console.log('⚡ Received live code update from BlastRadius server:', e.data);
+        loadData();
+      });
+      es.onerror = () => {
+        // Fallback for static servers like Vercel where SSE endpoint is not available
+      };
+    } catch {}
+  }
+}
+
+async function refreshDashboard() {
+  const btn = document.getElementById('btn-refresh');
+  const originalText = btn ? btn.textContent : '↻ Refresh';
+  if (btn) btn.textContent = '⏳ Refreshing...';
+
+  try {
+    await fetch('/api/refresh', { method: 'POST' }).catch(() => {});
+  } catch {}
+
+  await loadData();
+
+  if (btn) {
+    btn.textContent = '✓ Updated!';
+    setTimeout(() => {
+      btn.textContent = originalText;
+    }, 1000);
+  }
+}
+
 // Global exposure for HTML onclick handlers
 window.zoomGraph = zoomGraph;
 window.fitGraph = fitGraph;
 window.switchLogTab = switchLogTab;
 window.selectService = selectService;
+window.refreshDashboard = refreshDashboard;
+
+// Auto-recheck on window focus when user switches back to browser tab
+window.addEventListener('focus', () => {
+  loadData();
+});
 
 window.addEventListener('DOMContentLoaded', loadData);

@@ -275,6 +275,14 @@ function run() {
 
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(graph, null, 2), 'utf-8');
   console.log(`✅ Dependency graph written to ${path.relative(ROOT_DIR, OUTPUT_FILE)}`);
+
+  const dashboardDir = path.join(ROOT_DIR, 'dashboard');
+  if (fs.existsSync(dashboardDir)) {
+    const dashboardOutputFile = path.join(dashboardDir, 'dependency-graph.json');
+    fs.writeFileSync(dashboardOutputFile, JSON.stringify(graph, null, 2), 'utf-8');
+    console.log(`✅ Dependency graph copied to ${path.relative(ROOT_DIR, dashboardOutputFile)}`);
+  }
+
   console.log('\n--- Service Forward Dependencies (Who I depend on) ---');
   for (const [svc, deps] of Object.entries(graph.dependencies)) {
     console.log(`  ${svc.padEnd(15)} -> [${deps.join(', ') || 'none'}]`);

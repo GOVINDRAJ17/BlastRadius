@@ -4,6 +4,7 @@
   "description": "Dependency-graph-based selective CI testing system for monorepos",
   "main": "build-graph.js",
   "scripts": {
+    "build": "node build-graph.js && node compute-blast-radius.js && node record-metrics.js",
     "graph": "node build-graph.js",
     "blast-radius": "node compute-blast-radius.js",
     "record-metrics": "node record-metrics.js",

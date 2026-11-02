@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-11-02T19:12:57.950Z",
+  "totalServices": 5,
+  "changedServices": [
+    "search"
+  ],
+  "affectedServices": [
+    "search"
+  ],
+  "skippedServices": [
+    "auth",
+    "notifications",
+    "payments",
+    "shared"
+  ],
+  "changedFiles": [
+    "services/search/index.js"
+  ],
+  "fileDetailsByService": {
+    "search": [
+      "services/search/index.js"
+    ]
+  },
+  "globalFiles": [],
+  "explanations": {
+    "search": "Directly modified in git diff (1 file(s))"
+  },
+  "impactPaths": {
+    "search": [
+      "search"
+    ]
+  },
+  "metrics": {
+    "affectedCount": 1,
+    "skippedCount": 4,
+    "percentSaved": 80,
+    "estimatedTimeSavedMinutes": 10,
+    "estimatedActualTimeMinutes": 2.5,
+    "estimatedTotalTimeMinutes": 12.5
+  }
+}

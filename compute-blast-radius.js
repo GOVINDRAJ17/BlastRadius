@@ -48,12 +48,34 @@ function parseArgs() {
   return { base, head, simulatedChangedFiles };
 }
 
+const IGNORED_DIFF_PATTERNS = new Set([
+  'dependency-graph.json',
+  'blast-radius.json',
+  'metrics-history.json',
+  'dashboard/dependency-graph.json',
+  'dashboard/blast-radius.json',
+  'dashboard/metrics-history.json',
+  'package-lock.json',
+  '.gitignore'
+]);
+
+function filterMeaningfulFiles(files) {
+  return files
+    .map(f => f.trim().replace(/^"(.*)"$/, '$1').split('\\').join('/'))
+    .filter(f => {
+      if (!f) return false;
+      const base = path.basename(f);
+      if (IGNORED_DIFF_PATTERNS.has(f) || IGNORED_DIFF_PATTERNS.has(base)) return false;
+      return true;
+    });
+}
+
 /**
  * Obtains list of changed files using git diff with multiple fallbacks.
  */
 function getChangedFiles(base, head, simulatedFiles) {
   if (simulatedFiles !== null && Array.isArray(simulatedFiles)) {
-    return simulatedFiles;
+    return filterMeaningfulFiles(simulatedFiles);
   }
 
   try {
@@ -61,37 +83,54 @@ function getChangedFiles(base, head, simulatedFiles) {
     if (base && head) {
       const cmd = `git diff --name-only ${base}...${head}`;
       const output = execSync(cmd, { cwd: ROOT_DIR, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
-      return output.split('\n').map(l => l.trim()).filter(Boolean);
+      const files = filterMeaningfulFiles(output.split('\n'));
+      if (files.length > 0) return files;
     }
 
     // 2. If only base is specified (e.g. against main)
     if (base) {
       const cmd = `git diff --name-only ${base}`;
       const output = execSync(cmd, { cwd: ROOT_DIR, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
-      return output.split('\n').map(l => l.trim()).filter(Boolean);
+      const files = filterMeaningfulFiles(output.split('\n'));
+      if (files.length > 0) return files;
     }
 
     // 3. Fallback: Check working directory uncommitted/staged changes
     const statusOutput = execSync('git status --porcelain', { cwd: ROOT_DIR, encoding: 'utf-8' });
     if (statusOutput.trim().length > 0) {
-      return statusOutput
+      const uncommitted = statusOutput
         .split('\n')
-        .filter(l => l.length > 3)
-        .map(l => l.substring(3).trim())
-        .filter(Boolean);
+        .map(l => l.trim())
+        .filter(l => l.length > 2)
+        .map(l => {
+          const raw = l.substring(2).trim();
+          return raw.includes('->') ? raw.split('->')[1].trim() : raw;
+        });
+      const files = filterMeaningfulFiles(uncommitted);
+      if (files.length > 0) return files;
     }
 
     // 4. Fallback: Diff against HEAD~1 if commit exists
-    const diffHead1 = execSync('git diff --name-only HEAD~1 HEAD', { cwd: ROOT_DIR, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
-    return diffHead1.split('\n').map(l => l.trim()).filter(Boolean);
-  } catch (err) {
-    console.warn(`[WARN] Git diff failed (${err.message}). Falling back to git status or empty.`);
     try {
-      const st = execSync('git status --porcelain', { cwd: ROOT_DIR, encoding: 'utf-8' });
-      return st.split('\n').filter(l => l.length > 3).map(l => l.substring(3).trim()).filter(Boolean);
-    } catch {
-      return [];
+      const diffHead1 = execSync('git diff --name-only HEAD~1 HEAD', { cwd: ROOT_DIR, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
+      const files = filterMeaningfulFiles(diffHead1.split('\n'));
+      if (files.length > 0) return files;
+    } catch {}
+
+    // 5. Fallback: Diff against origin/master, master, origin/main, main
+    const targetBranches = ['origin/master', 'master', 'origin/main', 'main'];
+    for (const b of targetBranches) {
+      try {
+        const diffBranch = execSync(`git diff --name-only ${b}...HEAD`, { cwd: ROOT_DIR, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
+        const files = filterMeaningfulFiles(diffBranch.split('\n'));
+        if (files.length > 0) return files;
+      } catch {}
     }
+
+    return [];
+  } catch (err) {
+    console.warn(`[WARN] Git diff resolution warning: ${err.message}`);
+    return [];
   }
 }
 
@@ -225,13 +264,13 @@ function computeBlastRadius(graph, changedFiles) {
 function run() {
   console.log('💥 BlastRadius: Calculating Impact Radius...');
 
-  // Ensure dependency graph exists or rebuild it
-  let graph;
-  if (fs.existsSync(GRAPH_FILE)) {
-    graph = JSON.parse(fs.readFileSync(GRAPH_FILE, 'utf-8'));
-  } else {
-    graph = buildDependencyGraph();
-    fs.writeFileSync(GRAPH_FILE, JSON.stringify(graph, null, 2), 'utf-8');
+  // Always refresh dependency graph to capture latest imports across services
+  const graph = buildDependencyGraph();
+  fs.writeFileSync(GRAPH_FILE, JSON.stringify(graph, null, 2), 'utf-8');
+
+  const dashboardDir = path.join(ROOT_DIR, 'dashboard');
+  if (fs.existsSync(dashboardDir)) {
+    fs.writeFileSync(path.join(dashboardDir, 'dependency-graph.json'), JSON.stringify(graph, null, 2), 'utf-8');
   }
 
   const { base, head, simulatedChangedFiles } = parseArgs();
@@ -244,6 +283,12 @@ function run() {
 
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(result, null, 2), 'utf-8');
   console.log(`\n🎯 Blast Radius Output saved to ${path.relative(ROOT_DIR, OUTPUT_FILE)}`);
+
+  if (fs.existsSync(dashboardDir)) {
+    const dashboardOutputFile = path.join(dashboardDir, 'blast-radius.json');
+    fs.writeFileSync(dashboardOutputFile, JSON.stringify(result, null, 2), 'utf-8');
+    console.log(`🎯 Blast Radius Output copied to ${path.relative(ROOT_DIR, dashboardOutputFile)}`);
+  }
 
   console.log('\n================ Blast Radius Summary ================');
   console.log(`  Total Services in Monorepo: ${result.totalServices}`);
