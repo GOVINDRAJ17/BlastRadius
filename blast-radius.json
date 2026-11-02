@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-11-02T22:01:24.469Z",
-  "commitSha": "61d5359",
+  "timestamp": "2026-11-02T22:01:50.656Z",
+  "commitSha": "a46f7c7",
   "branch": "master",
-  "commitMessage": "chore(ci): auto-sync blast radius dashboard artifacts [skip ci]",
+  "commitMessage": "update: blast radius scope",
   "totalServices": 5,
   "changedServices": [
     "search"
   ],
   "affectedServices": [
+    "search"
+  ],
+  "skippedServices": [
     "auth",
     "notifications",
     "payments",
-    "search",
     "shared"
   ],
-  "skippedServices": [],
   "changedFiles": [
-    "package.json",
     "services/search/index.js"
   ],
   "fileDetailsByService": {
@@ -24,43 +24,21 @@
       "services/search/index.js"
     ]
   },
-  "globalFiles": [
-    "package.json"
-  ],
+  "globalFiles": [],
   "explanations": {
-    "auth": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)",
-    "notifications": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)",
-    "payments": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)",
-    "search": "Directly modified in git diff (1 file(s))",
-    "shared": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)"
+    "search": "Directly modified in git diff (1 file(s))"
   },
   "impactPaths": {
-    "auth": [
-      "root",
-      "auth"
-    ],
-    "notifications": [
-      "root",
-      "notifications"
-    ],
-    "payments": [
-      "root",
-      "payments"
-    ],
     "search": [
       "search"
-    ],
-    "shared": [
-      "root",
-      "shared"
     ]
   },
   "metrics": {
-    "affectedCount": 5,
-    "skippedCount": 0,
-    "percentSaved": 0,
-    "estimatedTimeSavedMinutes": 0,
-    "estimatedActualTimeMinutes": 12.5,
+    "affectedCount": 1,
+    "skippedCount": 4,
+    "percentSaved": 80,
+    "estimatedTimeSavedMinutes": 10,
+    "estimatedActualTimeMinutes": 2.5,
     "estimatedTotalTimeMinutes": 12.5
   }
 }
