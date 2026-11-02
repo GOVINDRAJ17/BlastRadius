@@ -2,8 +2,6 @@
  * Search Service
  * Standalone service with NO internal dependencies on other monorepo services.
  */
-//new
-require('../auth');
 const mockCatalog = [
   { id: 'item_1', name: 'Cloud Server Pro', category: 'compute', tags: ['cloud', 'vm', 'linux'] },
   { id: 'item_2', name: 'Managed Database', category: 'storage', tags: ['sql', 'postgres', 'data'] },
@@ -32,6 +30,5 @@ function getCatalogItem(id) {
 
 module.exports = {
   searchCatalog,
-  getCatalogItem,
-  mockCatalog
+  getCatalogItem
 };

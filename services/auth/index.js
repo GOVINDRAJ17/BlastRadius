@@ -1,6 +1,8 @@
-//demo 
-//new 
-require('../auth');
+/**
+ * Auth Service
+ * Depends on: @monorepo/shared
+ */
+
 const { logger, validateEmail } = require('../shared/index.js');
 
 const SECRET_KEY = process.env.JWT_SECRET || 'monorepo-super-secret-key';
