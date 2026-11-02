@@ -1,41 +1,57 @@
 {
-  "timestamp": "2026-11-02T21:39:58.140Z",
+  "timestamp": "2026-11-02T21:41:02.193Z",
   "totalServices": 5,
-  "changedServices": [
-    "search"
-  ],
+  "changedServices": [],
   "affectedServices": [
-    "search"
-  ],
-  "skippedServices": [
     "auth",
     "notifications",
     "payments",
+    "search",
     "shared"
   ],
+  "skippedServices": [],
   "changedFiles": [
-    "services/search/index.js"
+    "package.json"
   ],
-  "fileDetailsByService": {
-    "search": [
-      "services/search/index.js"
-    ]
-  },
-  "globalFiles": [],
+  "fileDetailsByService": {},
+  "globalFiles": [
+    "package.json"
+  ],
   "explanations": {
-    "search": "Directly modified in git diff (1 file(s))"
+    "auth": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)",
+    "notifications": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)",
+    "payments": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)",
+    "search": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)",
+    "shared": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)"
   },
   "impactPaths": {
+    "auth": [
+      "root",
+      "auth"
+    ],
+    "notifications": [
+      "root",
+      "notifications"
+    ],
+    "payments": [
+      "root",
+      "payments"
+    ],
     "search": [
+      "root",
       "search"
+    ],
+    "shared": [
+      "root",
+      "shared"
     ]
   },
   "metrics": {
-    "affectedCount": 1,
-    "skippedCount": 4,
-    "percentSaved": 80,
-    "estimatedTimeSavedMinutes": 10,
-    "estimatedActualTimeMinutes": 2.5,
+    "affectedCount": 5,
+    "skippedCount": 0,
+    "percentSaved": 0,
+    "estimatedTimeSavedMinutes": 0,
+    "estimatedActualTimeMinutes": 12.5,
     "estimatedTotalTimeMinutes": 12.5
   }
 }
