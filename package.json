@@ -10,7 +10,7 @@
     "record-metrics": "node record-metrics.js",
     "test:all": "node --test services/*/test/*.test.js",
     "dashboard": "node serve-dashboard.js",
-    "deploy": "npm run build && git add -A && git commit -m \"update: blast radius scope\" && git push origin HEAD:master"
+    "deploy": "npm run build && git add -A && (git commit -m \"update: blast radius scope\" || node -e \"process.exit(0)\") && git push origin HEAD:master"
   },
   "keywords": [
     "monorepo",

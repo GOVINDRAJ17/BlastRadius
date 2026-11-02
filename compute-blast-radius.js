@@ -239,8 +239,20 @@ function computeBlastRadius(graph, changedFiles) {
   const estimatedTotalTimeMinutes = totalServices * ESTIMATED_MINUTES_PER_SERVICE;
   const estimatedActualTimeMinutes = affectedCount * ESTIMATED_MINUTES_PER_SERVICE;
 
+  let commitSha = process.env.GITHUB_SHA ? process.env.GITHUB_SHA.substring(0, 7) : 'local';
+  let branch = process.env.GITHUB_REF_NAME || 'master';
+  let commitMessage = 'manual update';
+  try {
+    commitSha = execSync('git rev-parse --short HEAD', { cwd: ROOT_DIR, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }).trim();
+    branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: ROOT_DIR, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }).trim();
+    commitMessage = execSync('git log -1 --pretty=%B', { cwd: ROOT_DIR, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }).trim().split('\n')[0];
+  } catch {}
+
   return {
     timestamp: new Date().toISOString(),
+    commitSha,
+    branch,
+    commitMessage,
     totalServices,
     changedServices,
     affectedServices,

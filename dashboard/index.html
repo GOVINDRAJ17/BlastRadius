@@ -50,6 +50,20 @@
 
   <!-- Main Container -->
   <main class="container">
+    <!-- Live CI Sync Status Banner -->
+    <div class="ci-banner" id="ci-banner">
+      <div class="ci-banner-left">
+        <span class="live-dot" id="live-indicator"></span>
+        <span class="ci-label">Continuous Integration:</span>
+        <span class="ci-status-text" id="ci-status-text">Synchronizing...</span>
+      </div>
+      <div class="ci-banner-right">
+        <span class="ci-detail-tag" id="ci-branch-tag">branch: master</span>
+        <span class="ci-detail-tag" id="ci-commit-tag">commit: ...</span>
+        <span class="ci-time" id="ci-time-tag">just now</span>
+      </div>
+    </div>
+
     <!-- Stat Metric Cards -->
     <section class="stats-grid">
       <div class="stat-card total">

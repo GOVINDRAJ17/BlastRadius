@@ -716,6 +716,30 @@ function renderStats() {
   document.getElementById('stat-skipped').textContent = blast.skippedServices?.length || 0;
   document.getElementById('stat-saved').textContent = `~${metrics.percentSaved || 0}%`;
   document.getElementById('stat-saved-mins').textContent = `~${metrics.estimatedTimeSavedMinutes || 0} mins saved this run`;
+
+  // Update Continuous Integration Banner
+  const statusEl = document.getElementById('ci-status-text');
+  const branchEl = document.getElementById('ci-branch-tag');
+  const commitEl = document.getElementById('ci-commit-tag');
+  const timeEl = document.getElementById('ci-time-tag');
+
+  if (statusEl) {
+    const changed = (blast.changedServices || []).join(', ') || 'None';
+    const changedFiles = (blast.changedFiles || []).map(f => f.split('/').pop()).join(', ');
+    statusEl.textContent = `Analyzed change: [${changed}] ${changedFiles ? `via ${changedFiles}` : ''}`;
+  }
+  if (branchEl) {
+    branchEl.textContent = `branch: ${blast.branch || 'master'}`;
+  }
+  if (commitEl) {
+    commitEl.textContent = `commit: ${blast.commitSha || 'latest'}`;
+  }
+  if (timeEl && blast.timestamp) {
+    try {
+      const dt = new Date(blast.timestamp);
+      timeEl.textContent = dt.toLocaleTimeString();
+    } catch {}
+  }
 }
 
 function renderServiceList() {
