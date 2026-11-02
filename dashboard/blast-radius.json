@@ -1,41 +1,81 @@
 {
-  "timestamp": "2026-11-02T19:12:57.950Z",
+  "timestamp": "2026-11-02T21:08:08.138Z",
   "totalServices": 5,
   "changedServices": [
-    "search"
+    "search",
+    "shared"
   ],
   "affectedServices": [
-    "search"
-  ],
-  "skippedServices": [
     "auth",
     "notifications",
     "payments",
+    "search",
     "shared"
   ],
+  "skippedServices": [],
   "changedFiles": [
-    "services/search/index.js"
+    ".env.example",
+    ".github/workflows/blastradius.yml",
+    "api/ci-runs.js",
+    "dashboard/app.js",
+    "dashboard/index.html",
+    "dashboard/style.css",
+    "record-metrics-supabase.js",
+    "serve-dashboard.js",
+    "services/search/index.js",
+    "services/shared/index.js"
   ],
   "fileDetailsByService": {
     "search": [
       "services/search/index.js"
+    ],
+    "shared": [
+      "services/shared/index.js"
     ]
   },
-  "globalFiles": [],
+  "globalFiles": [
+    ".env.example",
+    ".github/workflows/blastradius.yml",
+    "api/ci-runs.js",
+    "dashboard/app.js",
+    "dashboard/index.html",
+    "dashboard/style.css",
+    "record-metrics-supabase.js",
+    "serve-dashboard.js"
+  ],
   "explanations": {
-    "search": "Directly modified in git diff (1 file(s))"
+    "auth": "Included in full rebuild: Shared core utility package was modified (full rebuild fallback)",
+    "notifications": "Included in full rebuild: Shared core utility package was modified (full rebuild fallback)",
+    "payments": "Included in full rebuild: Shared core utility package was modified (full rebuild fallback)",
+    "search": "Directly modified in git diff (1 file(s))",
+    "shared": "Directly modified in git diff (1 file(s))"
   },
   "impactPaths": {
+    "auth": [
+      "shared",
+      "auth"
+    ],
+    "notifications": [
+      "shared",
+      "notifications"
+    ],
+    "payments": [
+      "shared",
+      "payments"
+    ],
     "search": [
       "search"
+    ],
+    "shared": [
+      "shared"
     ]
   },
   "metrics": {
-    "affectedCount": 1,
-    "skippedCount": 4,
-    "percentSaved": 80,
-    "estimatedTimeSavedMinutes": 10,
-    "estimatedActualTimeMinutes": 2.5,
+    "affectedCount": 5,
+    "skippedCount": 0,
+    "percentSaved": 0,
+    "estimatedTimeSavedMinutes": 0,
+    "estimatedActualTimeMinutes": 12.5,
     "estimatedTotalTimeMinutes": 12.5
   }
 }

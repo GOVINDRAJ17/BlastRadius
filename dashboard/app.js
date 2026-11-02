@@ -369,11 +369,10 @@ let isUIInitialized = false;
 
 async function loadData() {
   try {
-    const [graphRes, blastRes, histRes, supabaseRes] = await Promise.all([
+    const [graphRes, blastRes, histRes] = await Promise.all([
       fetchJSON('dependency-graph.json'),
       fetchJSON('blast-radius.json'),
-      fetchJSON('metrics-history.json'),
-      fetchJSON('/api/ci-runs')
+      fetchJSON('metrics-history.json')
     ]);
 
     if (graphRes) graphData = graphRes;
@@ -385,10 +384,6 @@ async function loadData() {
       SCENARIOS.current = SCENARIOS.auth_only;
     }
     if (histRes) historyData = histRes;
-    if (supabaseRes && Array.isArray(supabaseRes.runs) && supabaseRes.runs.length > 0) {
-      if (!historyData) historyData = { runs: [], summary: {} };
-      historyData.runs = supabaseRes.runs;
-    }
   } catch (err) {
     console.warn('Using fallback simulation state:', err);
     currentBlastRadius = SCENARIOS.auth_only;
@@ -413,6 +408,18 @@ async function loadData() {
   renderHistory();
   const activeSvc = currentBlastRadius?.changedServices?.[0] || currentBlastRadius?.affectedServices?.[0] || 'auth';
   selectService(activeSvc);
+
+  // Background fetch from Supabase ci-runs API (non-blocking)
+  fetch('/api/ci-runs', { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (data && Array.isArray(data.runs) && data.runs.length > 0) {
+        if (!historyData) historyData = { runs: [], summary: {} };
+        historyData.runs = data.runs;
+        renderHistory();
+      }
+    })
+    .catch(() => {});
 }
 
 function getNodeColor(svcName, blast) {
@@ -556,11 +563,18 @@ function renderGraph() {
   if (!container) return;
 
   const blast = currentBlastRadius || SCENARIOS.auth_only;
+  const affected = blast.affectedServices || [];
+  const changed = blast.changedServices || [];
 
-  // Check if vis library is loaded; if not, render SVG fallback
+  // Check if vis library is loaded; if not, render responsive SVG fallback and schedule retry
   if (typeof vis === 'undefined' || !vis.Network) {
-    console.warn('vis library not ready, rendering responsive SVG graph fallback.');
+    console.warn('vis library not ready yet, rendering responsive SVG graph.');
     renderSVGGraph(container, blast);
+    setTimeout(() => {
+      if (typeof vis !== 'undefined' && vis.Network && !network) {
+        renderGraph();
+      }
+    }, 400);
     return;
   }
 
@@ -568,8 +582,8 @@ function renderGraph() {
     const nodes = (graphData.nodes || Object.keys(graphData.dependencies || {})).map(svc => {
       const isSpecial = svc === 'shared';
       const colors = getNodeColor(svc, blast);
-      const isAffected = blast.affectedServices.includes(svc);
-      const isChanged = blast.changedServices.includes(svc);
+      const isAffected = affected.includes(svc);
+      const isChanged = changed.includes(svc);
 
       let label = `${svc}\n${isChanged ? '[CHANGED]' : isAffected ? '[TEST]' : '[SKIP]'}`;
       if (isSpecial) label = `★ ${label}`;
@@ -604,7 +618,7 @@ function renderGraph() {
     let edgeId = 1;
     for (const [source, depList] of Object.entries(graphData.dependencies || {})) {
       for (const target of depList) {
-        const activePath = blast.affectedServices.includes(source) && blast.affectedServices.includes(target);
+        const activePath = affected.includes(source) && affected.includes(target);
 
         edges.push({
           id: edgeId++,
@@ -628,8 +642,8 @@ function renderGraph() {
     }
 
     const data = {
-      nodes: new vis.DataSet(nodes),
-      edges: new vis.DataSet(edges)
+      nodes: typeof vis.DataSet === 'function' ? new vis.DataSet(nodes) : nodes,
+      edges: typeof vis.DataSet === 'function' ? new vis.DataSet(edges) : edges
     };
 
     const options = {
@@ -637,12 +651,12 @@ function renderGraph() {
       height: '520px',
       width: '100%',
       physics: {
-        enabled: false // Static coordinates ensure instant, rock-solid, centered rendering
+        enabled: false // Static coordinates ensure instant, centered rendering
       },
       interaction: {
         hover: true,
         tooltipDelay: 100,
-        zoomView: false, // Prevents mouse wheel from trapping or hijacking page scroll!
+        zoomView: true,
         dragView: true,
         dragNodes: true,
         keyboard: false,
@@ -663,12 +677,12 @@ function renderGraph() {
       }
     });
 
-    // Re-fit canvas into view cleanly without jumping scroll
+    // Re-fit canvas into view cleanly
     setTimeout(() => {
-      if (network) {
+      if (network && typeof network.fit === 'function') {
         network.fit({ animation: false });
       }
-    }, 50);
+    }, 60);
 
   } catch (err) {
     console.error('vis-network initialization error, falling back to SVG:', err);
@@ -766,8 +780,10 @@ function selectService(svcName) {
   }
 
   // Highlight in vis-network without stealing scroll
-  if (network) {
-    network.selectNodes([svcName]);
+  if (network && typeof network.selectNodes === 'function') {
+    try {
+      network.selectNodes([svcName]);
+    } catch {}
   }
 
   // Also switch test log tab to this service if available

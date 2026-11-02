@@ -11,11 +11,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 
-  <!-- Vis-network: Local first with CDN fallback -->
-  <script type="text/javascript" src="vis-network.min.js"></script>
+  <!-- Vis-network: High-performance CDN with local fallback -->
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
   <script type="text/javascript">
-    if (typeof vis === 'undefined') {
-      document.write('<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"><\/script>');
+    if (typeof vis === 'undefined' || !vis.Network) {
+      const s = document.createElement('script');
+      s.src = 'vis-network.min.js';
+      document.head.appendChild(s);
     }
   </script>
 
