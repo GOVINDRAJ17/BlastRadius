@@ -1,10 +1,12 @@
 {
-  "timestamp": "2026-11-02T22:00:15.519Z",
-  "commitSha": "7e9850b",
+  "timestamp": "2026-11-02T22:01:24.469Z",
+  "commitSha": "61d5359",
   "branch": "master",
-  "commitMessage": "feat: add live continuous integration sync banner and auto-sync CI workflow",
+  "commitMessage": "chore(ci): auto-sync blast radius dashboard artifacts [skip ci]",
   "totalServices": 5,
-  "changedServices": [],
+  "changedServices": [
+    "search"
+  ],
   "affectedServices": [
     "auth",
     "notifications",
@@ -14,29 +16,22 @@
   ],
   "skippedServices": [],
   "changedFiles": [
-    ".github/workflows/blastradius.yml",
-    "compute-blast-radius.js",
-    "dashboard/api/ci-runs.js",
-    "dashboard/app.js",
-    "dashboard/index.html",
-    "dashboard/style.css",
-    "package.json"
+    "package.json",
+    "services/search/index.js"
   ],
-  "fileDetailsByService": {},
+  "fileDetailsByService": {
+    "search": [
+      "services/search/index.js"
+    ]
+  },
   "globalFiles": [
-    ".github/workflows/blastradius.yml",
-    "compute-blast-radius.js",
-    "dashboard/api/ci-runs.js",
-    "dashboard/app.js",
-    "dashboard/index.html",
-    "dashboard/style.css",
     "package.json"
   ],
   "explanations": {
     "auth": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)",
     "notifications": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)",
     "payments": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)",
-    "search": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)",
+    "search": "Directly modified in git diff (1 file(s))",
     "shared": "Included in full rebuild: Root package/dependency manifest modified (full rebuild fallback)"
   },
   "impactPaths": {
@@ -53,7 +48,6 @@
       "payments"
     ],
     "search": [
-      "root",
       "search"
     ],
     "shared": [
