@@ -53,7 +53,7 @@ function resolveFilePath(urlPath) {
   return null;
 }
 
-const server = http.createServer((req, res) => {
+function handleRequest(req, res) {
   const filePath = resolveFilePath(req.url);
 
   if (!filePath) {
@@ -71,11 +71,38 @@ const server = http.createServer((req, res) => {
     'Cache-Control': 'no-cache, no-store, must-revalidate'
   });
 
-  fs.createReadStream(filePath).pipe(res);
+  const stream = fs.createReadStream(filePath);
+  stream.on('error', (err) => {
+    if (!res.headersSent) {
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+    }
+    res.end('Internal Server Error');
+  });
+  stream.pipe(res);
+}
+
+process.on('uncaughtException', (err) => {
+  console.error('Server uncaught exception:', err.message);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('Server unhandled rejection:', reason);
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🚀 BlastRadius Dashboard running at:`);
-  console.log(`   👉 http://localhost:${PORT}/`);
-  console.log(`   👉 http://localhost:${PORT}/dashboard/index.html\n`);
-});
+const requestedPort = process.env.PORT ? parseInt(process.env.PORT, 10) : null;
+const portsToTry = requestedPort ? [requestedPort] : [3000, 3001];
+
+console.log(`\n🚀 Starting BlastRadius Dashboard Server...`);
+for (const port of portsToTry) {
+  const server = http.createServer(handleRequest);
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`⚠️  Port ${port} is already in use.`);
+    } else {
+      console.error(`Error on port ${port}:`, err.message);
+    }
+  });
+  server.listen(port, '0.0.0.0', () => {
+    console.log(`   👉 http://localhost:${port}/`);
+    console.log(`   👉 http://localhost:${port}/dashboard/index.html`);
+  });
+}

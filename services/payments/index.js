@@ -2,7 +2,7 @@
  * Payments Service
  * Depends on: @monorepo/auth, @monorepo/shared
  */
-
+//demonstration
 const { verifyToken } = require('../auth/index.js');
 const { logger, formatCurrency } = require('../shared/index.js');
 

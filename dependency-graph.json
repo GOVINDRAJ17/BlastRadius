@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-19T18:59:14.158Z",
+  "generatedAt": "2026-10-22T06:44:52.361Z",
   "nodes": [
     "auth",
     "notifications",
@@ -11,7 +11,7 @@
   "serviceStats": {
     "auth": {
       "filesParsed": 2,
-      "totalImports": 4,
+      "totalImports": 5,
       "internalDependencies": [
         "shared"
       ]
@@ -34,8 +34,10 @@
     },
     "search": {
       "filesParsed": 2,
-      "totalImports": 3,
-      "internalDependencies": []
+      "totalImports": 4,
+      "internalDependencies": [
+        "auth"
+      ]
     },
     "shared": {
       "filesParsed": 2,
@@ -55,12 +57,15 @@
       "auth",
       "shared"
     ],
-    "search": [],
+    "search": [
+      "auth"
+    ],
     "shared": []
   },
   "reverseDependencies": {
     "auth": [
-      "payments"
+      "payments",
+      "search"
     ],
     "notifications": [],
     "payments": [
@@ -115,6 +120,13 @@
       "type": "require",
       "specifier": "../../auth/index.js",
       "sourceFile": "services/payments/test/index.test.js"
+    },
+    {
+      "from": "search",
+      "to": "auth",
+      "type": "require",
+      "specifier": "../auth",
+      "sourceFile": "services/search/index.js"
     }
   ]
 }
