@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-11-02T22:02:10.291Z",
-  "commitSha": "05cea13",
-  "branch": "master",
-  "commitMessage": "update: blast radius scope",
+  "timestamp": "2026-11-03T07:17:21.846Z",
+  "commitSha": "66bee5b",
+  "branch": "HEAD",
+  "commitMessage": "chore(ci): auto-sync blast radius dashboard artifacts [skip ci]",
   "totalServices": 5,
   "changedServices": [
     "search"
