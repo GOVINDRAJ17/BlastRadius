@@ -1,33 +1,58 @@
 {
-  "timestamp": "2026-11-03T07:18:31.753Z",
-  "commitSha": "656ef72",
+  "timestamp": "2026-11-03T07:21:32.098Z",
+  "commitSha": "84a2ffd",
   "branch": "master",
-  "commitMessage": "update: blast radius scope",
+  "commitMessage": "fix: resolve rebase conflict and remove bot push from CI",
   "totalServices": 5,
-  "changedServices": [],
-  "affectedServices": [],
-  "skippedServices": [
-    "auth",
+  "changedServices": [
+    "payments",
+    "search"
+  ],
+  "affectedServices": [
     "notifications",
     "payments",
-    "search",
+    "search"
+  ],
+  "skippedServices": [
+    "auth",
     "shared"
   ],
   "changedFiles": [
-    ".github/workflows/blastradius.yml"
+    "services/payments/index.js",
+    "services/search/index.js"
   ],
-  "fileDetailsByService": {},
-  "globalFiles": [
-    ".github/workflows/blastradius.yml"
-  ],
-  "explanations": {},
-  "impactPaths": {},
+  "fileDetailsByService": {
+    "payments": [
+      "services/payments/index.js"
+    ],
+    "search": [
+      "services/search/index.js"
+    ]
+  },
+  "globalFiles": [],
+  "explanations": {
+    "payments": "Directly modified in git diff (1 file(s))",
+    "search": "Directly modified in git diff (1 file(s))",
+    "notifications": "Tested transitively because notifications -> payments (directly changed)"
+  },
+  "impactPaths": {
+    "payments": [
+      "payments"
+    ],
+    "search": [
+      "search"
+    ],
+    "notifications": [
+      "payments",
+      "notifications"
+    ]
+  },
   "metrics": {
-    "affectedCount": 0,
-    "skippedCount": 5,
-    "percentSaved": 100,
-    "estimatedTimeSavedMinutes": 12.5,
-    "estimatedActualTimeMinutes": 0,
+    "affectedCount": 3,
+    "skippedCount": 2,
+    "percentSaved": 40,
+    "estimatedTimeSavedMinutes": 5,
+    "estimatedActualTimeMinutes": 7.5,
     "estimatedTotalTimeMinutes": 12.5
   }
 }

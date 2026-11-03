@@ -2,7 +2,7 @@
  * Search Service
  * Standalone service with NO internal dependencies on other monorepo services.
  */
-// update: fast in-memory trie search rankin
+
 const mockCatalog = [
   { id: 'item_1', name: 'Cloud Server Pro', category: 'compute', tags: ['cloud', 'vm', 'linux'] },
   { id: 'item_2', name: 'Managed Database', category: 'storage', tags: ['sql', 'postgres', 'data'] },
