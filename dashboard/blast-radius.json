@@ -1,48 +1,45 @@
 {
-  "timestamp": "2026-11-03T07:21:32.098Z",
-  "commitSha": "84a2ffd",
+  "timestamp": "2026-11-03T07:25:18.531Z",
+  "commitSha": "3ce5368",
   "branch": "master",
-  "commitMessage": "fix: resolve rebase conflict and remove bot push from CI",
+  "commitMessage": "update: blast radius scope",
   "totalServices": 5,
   "changedServices": [
-    "payments",
-    "search"
+    "auth"
   ],
   "affectedServices": [
+    "auth",
     "notifications",
-    "payments",
-    "search"
+    "payments"
   ],
   "skippedServices": [
-    "auth",
+    "search",
     "shared"
   ],
   "changedFiles": [
-    "services/payments/index.js",
-    "services/search/index.js"
+    "services/auth/index.js"
   ],
   "fileDetailsByService": {
-    "payments": [
-      "services/payments/index.js"
-    ],
-    "search": [
-      "services/search/index.js"
+    "auth": [
+      "services/auth/index.js"
     ]
   },
   "globalFiles": [],
   "explanations": {
-    "payments": "Directly modified in git diff (1 file(s))",
-    "search": "Directly modified in git diff (1 file(s))",
-    "notifications": "Tested transitively because notifications -> payments (directly changed)"
+    "auth": "Directly modified in git diff (1 file(s))",
+    "payments": "Tested transitively because payments -> auth (directly changed)",
+    "notifications": "Tested transitively because notifications -> payments -> auth (directly changed)"
   },
   "impactPaths": {
+    "auth": [
+      "auth"
+    ],
     "payments": [
+      "auth",
       "payments"
     ],
-    "search": [
-      "search"
-    ],
     "notifications": [
+      "auth",
       "payments",
       "notifications"
     ]
