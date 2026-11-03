@@ -105,15 +105,6 @@ jobs:
             dashboard/
           if-no-files-found: ignore
 
-      - name: Auto-Sync CI Dashboard Artifacts to Master
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add dashboard/blast-radius.json dashboard/dependency-graph.json dashboard/metrics-history.json blast-radius.json dependency-graph.json metrics-history.json
-          git commit -m "chore(ci): auto-sync blast radius dashboard artifacts [skip ci]" || echo "No changes to commit"
-          git push origin master || echo "Push failed or already up to date"
-
       - name: Post PR Summary Comment
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7

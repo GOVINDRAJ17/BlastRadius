@@ -1,44 +1,33 @@
 {
-  "timestamp": "2026-11-03T07:17:21.846Z",
-  "commitSha": "66bee5b",
-  "branch": "HEAD",
-  "commitMessage": "chore(ci): auto-sync blast radius dashboard artifacts [skip ci]",
+  "timestamp": "2026-11-03T07:18:31.753Z",
+  "commitSha": "656ef72",
+  "branch": "master",
+  "commitMessage": "update: blast radius scope",
   "totalServices": 5,
-  "changedServices": [
-    "search"
-  ],
-  "affectedServices": [
-    "search"
-  ],
+  "changedServices": [],
+  "affectedServices": [],
   "skippedServices": [
     "auth",
     "notifications",
     "payments",
+    "search",
     "shared"
   ],
   "changedFiles": [
-    "services/search/index.js"
+    ".github/workflows/blastradius.yml"
   ],
-  "fileDetailsByService": {
-    "search": [
-      "services/search/index.js"
-    ]
-  },
-  "globalFiles": [],
-  "explanations": {
-    "search": "Directly modified in git diff (1 file(s))"
-  },
-  "impactPaths": {
-    "search": [
-      "search"
-    ]
-  },
+  "fileDetailsByService": {},
+  "globalFiles": [
+    ".github/workflows/blastradius.yml"
+  ],
+  "explanations": {},
+  "impactPaths": {},
   "metrics": {
-    "affectedCount": 1,
-    "skippedCount": 4,
-    "percentSaved": 80,
-    "estimatedTimeSavedMinutes": 10,
-    "estimatedActualTimeMinutes": 2.5,
+    "affectedCount": 0,
+    "skippedCount": 5,
+    "percentSaved": 100,
+    "estimatedTimeSavedMinutes": 12.5,
+    "estimatedActualTimeMinutes": 0,
     "estimatedTotalTimeMinutes": 12.5
   }
 }
