@@ -523,6 +523,9 @@ async function loadData() {
   renderStats();
   renderScopeContract();
   renderServiceList();
+  renderOverviewChips();
+  renderSavingsBaselineBar();
+  renderPipelineStages();
   renderHistory();
   loadInfraStatus();
   loadContainerMetrics();
@@ -709,6 +712,55 @@ function formatBytes(bytes) {
   return `${mb.toFixed(1)} MB`;
 }
 
+let currentContainerSort = { col: 'service', asc: true };
+let currentContainerFilter = 'all';
+
+function formatUptime(seconds) {
+  if (typeof seconds !== 'number' || isNaN(seconds) || seconds <= 0) return 'unavailable';
+  if (seconds < 60) return `${Math.floor(seconds)}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  return `${(seconds / 3600).toFixed(1)}h`;
+}
+
+function filterContainers(status) {
+  currentContainerFilter = status;
+  const buttons = document.querySelectorAll('#container-status-filters .filter-btn');
+  buttons.forEach(btn => {
+    if (btn.textContent.toLowerCase().includes(status)) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+  updateSelectedContainerView();
+}
+
+function sortContainers(col) {
+  if (currentContainerSort.col === col) {
+    currentContainerSort.asc = !currentContainerSort.asc;
+  } else {
+    currentContainerSort.col = col;
+    currentContainerSort.asc = true;
+  }
+  ['service', 'health', 'cpu', 'mem', 'restarts', 'uptime'].forEach(k => {
+    const el = document.getElementById(`sort-${k}`);
+    if (el) el.textContent = '';
+  });
+  const shortMap = { service: 'service', health: 'health', cpu_percent: 'cpu', memory_bytes: 'mem', restart_count: 'restarts', uptime_seconds: 'uptime' };
+  const arrowEl = document.getElementById(`sort-${shortMap[col] || col}`);
+  if (arrowEl) arrowEl.textContent = currentContainerSort.asc ? '▲' : '▼';
+
+  updateSelectedContainerView();
+}
+
+function inspectContainerRow(serviceName) {
+  const select = document.getElementById('container-select');
+  if (select) {
+    select.value = serviceName;
+    updateSelectedContainerView();
+  }
+}
+
 function updateSelectedContainerView() {
   if (!lastContainersData || !lastContainersData.containers) return;
 
@@ -850,22 +902,48 @@ function updateSelectedContainerView() {
     }
   }
 
-  // Populate/update table
+  // Populate/update table with sorting, filtering, and row click inspection
   const tbody = document.getElementById('containers-table-body');
   if (tbody) {
-    tbody.innerHTML = containers.map(c => {
+    let displayed = [...containers];
+    if (currentContainerFilter === 'healthy') {
+      displayed = displayed.filter(c => c.health === 'healthy');
+    } else if (currentContainerFilter === 'unhealthy') {
+      displayed = displayed.filter(c => c.health !== 'healthy');
+    }
+
+    displayed.sort((a, b) => {
+      let va = a[currentContainerSort.col];
+      let vb = b[currentContainerSort.col];
+      if (typeof va === 'string') va = va.toLowerCase();
+      if (typeof vb === 'string') vb = vb.toLowerCase();
+      if (va === null || va === undefined) return 1;
+      if (vb === null || vb === undefined) return -1;
+      if (va < vb) return currentContainerSort.asc ? -1 : 1;
+      if (va > vb) return currentContainerSort.asc ? 1 : -1;
+      return 0;
+    });
+
+    tbody.innerHTML = displayed.map(c => {
       const isUp = c.health === 'healthy';
       const healthBadge = `<span style="color: ${isUp ? '#34d399' : '#f87171'}; font-weight: 600;">${isUp ? 'UP' : (c.health || 'unhealthy').toUpperCase()}</span>`;
       const cpuVal = typeof c.cpu_percent === 'number' ? `${c.cpu_percent.toFixed(1)}%` : '<span style="color:#64748b;" title="' + (c.cpu_percent_reason || '') + '">unavail</span>';
       const memVal = typeof c.memory_bytes === 'number' ? formatBytes(c.memory_bytes) : '<span style="color:#64748b;" title="' + (c.memory_bytes_reason || '') + '">unavail</span>';
       const restartsVal = typeof c.restart_count === 'number' ? c.restart_count : '-';
-      return `<tr style="border-bottom: 1px solid #1e293b;">
-        <td style="padding: 2px 4px; font-weight: 500; color: #f1f5f9;">${c.service}</td>
-        <td style="padding: 2px 4px;">${healthBadge}</td>
-        <td style="padding: 2px 4px;">${cpuVal}</td>
-        <td style="padding: 2px 4px;">${memVal}</td>
-        <td style="padding: 2px 4px;">${restartsVal}</td>
-      </tr>`;
+      const uptimeVal = formatUptime(c.uptime_seconds);
+      const srcVal = `<span class="source-pill ${c.source === 'unavailable' ? 'unavailable' : 'live'}" style="font-size:0.65rem;">${c.source || 'docker-api'}</span>`;
+
+      return `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); cursor: pointer;" onclick="inspectContainerRow('${c.service}')">
+          <td style="padding: 6px 8px; font-weight: 600; color: #f1f5f9;">${c.service}</td>
+          <td style="padding: 6px 8px;">${healthBadge}</td>
+          <td style="padding: 6px 8px;">${cpuVal}</td>
+          <td style="padding: 6px 8px;">${memVal}</td>
+          <td style="padding: 6px 8px;">${restartsVal}</td>
+          <td style="padding: 6px 8px; color: #94a3b8;">${uptimeVal}</td>
+          <td style="padding: 6px 8px;">${srcVal}</td>
+        </tr>
+      `;
     }).join('');
   }
 }
@@ -1230,6 +1308,27 @@ function renderStats() {
   document.getElementById('stat-saved').textContent = savings.pctText;
   document.getElementById('stat-saved-mins').textContent = savings.minsText;
 
+  // Update Top Verdict Line (Phase B requirement 1: "N of 5 services tested, M skipped, ~X min saved.")
+  const verdictEl = document.getElementById('verdict-text');
+  const verdictSource = document.getElementById('verdict-source-badge');
+  if (verdictEl) {
+    if (testedCount === 0) {
+      verdictEl.textContent = `0 of 5 services tested, 5 skipped, 0 min saved.`;
+    } else {
+      verdictEl.textContent = `${testedCount} of 5 services tested, ${skippedServices.length} skipped, ~${savings.minutes.toFixed(1)} min saved.`;
+    }
+  }
+  if (verdictSource) {
+    verdictSource.textContent = isSimulated ? 'SEEDED' : 'LAST RUN';
+    verdictSource.className = `source-pill ${isSimulated ? 'seeded' : 'last-run'}`;
+  }
+
+  const savingsBarSource = document.getElementById('badge-savings-bar-source');
+  if (savingsBarSource) {
+    savingsBarSource.textContent = isSimulated ? 'SEEDED' : 'LAST RUN';
+    savingsBarSource.className = `source-pill ${isSimulated ? 'seeded' : 'last-run'}`;
+  }
+
   // Update Continuous Integration Banner
   const statusEl = document.getElementById('ci-status-text');
   const branchEl = document.getElementById('ci-branch-tag');
@@ -1377,10 +1476,16 @@ function switchLogTab(svcName) {
   }
 }
 
-function renderHistory() {
+function filterHistory() {
+  const input = document.getElementById('history-branch-filter');
+  const query = (input?.value || '').toLowerCase().trim();
+  renderHistory(query);
+}
+
+function renderHistory(filterBranch = '') {
   const tbody = document.getElementById('history-table-body');
   const isFromApi = Boolean(historyData?.source === 'redis-cache' || historyData?.source === 'local-file');
-  const runs = historyData?.runs || [
+  let runs = historyData?.runs || [
     {
       prNumber: 104,
       branch: 'perf/email-digest',
@@ -1419,6 +1524,10 @@ function renderHistory() {
     }
   ];
 
+  if (filterBranch) {
+    runs = runs.filter(r => (r.branch || '').toLowerCase().includes(filterBranch));
+  }
+
   tbody.innerHTML = runs.map(r => {
     const rawTested = r.tested || r.affectedServices || [];
     const appTested = rawTested.filter(s => s !== 'api');
@@ -1456,7 +1565,192 @@ function renderHistory() {
   }
 }
 
+function renderOverviewChips() {
+  const container = document.getElementById('overview-service-chips');
+  if (!container) return;
+
+  const blast = currentBlastRadius || SCENARIOS.auth_only;
+  const appServices = ['auth', 'notifications', 'payments', 'search', 'shared'];
+  const changed = (blast.changedServices || blast.changed_services || []).filter(s => s !== 'api');
+  const tested = (blast.affectedServices || blast.tested || []).filter(s => s !== 'api');
+
+  container.innerHTML = appServices.map(svc => {
+    const isDirect = changed.includes(svc);
+    const isTested = tested.includes(svc);
+    let badgeText = 'SKIP';
+    let badgeStyle = 'background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3);';
+    if (isDirect) {
+      badgeText = 'TEST (CHANGED)';
+      badgeStyle = 'background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);';
+    } else if (isTested) {
+      badgeText = 'TEST';
+      badgeStyle = 'background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);';
+    }
+
+    const reason = blast.explanations?.[svc] || (isDirect ? 'Directly modified in git diff' : isTested ? 'Transitively affected' : 'Untouched (Safe to skip)');
+
+    return `
+      <div class="service-chip" onclick="selectServiceAndInspect('${svc}')">
+        <div class="service-chip-header">
+          <span class="service-chip-name">${svc}</span>
+          <span class="badge" style="${badgeStyle}; font-size: 0.68rem; padding: 0.15rem 0.45rem;">${badgeText}</span>
+        </div>
+        <div class="service-chip-desc">${reason}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectServiceAndInspect(svc) {
+  selectService(svc);
+  switchTab('scope');
+}
+
+function renderSavingsBaselineBar() {
+  const blast = currentBlastRadius || SCENARIOS.auth_only;
+  const tested = (blast.affectedServices || blast.tested || []).filter(s => s !== 'api');
+  const testedCount = tested.length;
+  const total = 5;
+  const savings = computeSavings(testedCount, total);
+
+  const testedMins = Number((testedCount * 2.5).toFixed(1));
+  const savedMins = savings.minutes;
+
+  const testedPct = Math.round((testedCount / total) * 100);
+  const savedPct = 100 - testedPct;
+
+  const barTested = document.getElementById('savings-bar-tested');
+  const barSaved = document.getElementById('savings-bar-saved');
+  const lblTested = document.getElementById('savings-bar-tested-label');
+  const lblSaved = document.getElementById('savings-bar-saved-label');
+
+  if (barTested) barTested.style.width = `${testedPct}%`;
+  if (barSaved) barSaved.style.width = `${savedPct}%`;
+  if (lblTested) lblTested.textContent = `Tested: ${testedMins}m (${testedCount}/5)`;
+  if (lblSaved) lblSaved.textContent = `Skipped (Saved): ${savedMins}m (${total - testedCount}/5)`;
+}
+
+function renderPipelineStages() {
+  const container = document.getElementById('pipeline-stages-container');
+  if (!container) return;
+
+  const blast = currentBlastRadius || SCENARIOS.auth_only;
+  const changedFiles = blast.changedFiles || blast.changed_files || [];
+  const changedServices = (blast.changedServices || blast.changed_services || []).filter(s => s !== 'api');
+  const tested = (blast.affectedServices || blast.tested || []).filter(s => s !== 'api');
+  const skipped = (blast.skippedServices || blast.skipped || []).filter(s => s !== 'api');
+  const toBuild = tested;
+  const toDeploy = tested;
+
+  const stages = [
+    {
+      num: 'STAGE 1',
+      title: '📁 Changed Files',
+      count: `${changedFiles.length} file(s)`,
+      status: changedFiles.length > 0 ? 'success' : 'skipped',
+      statusText: changedFiles.length > 0 ? 'DETECTED' : 'CLEAN',
+      detail: changedFiles.map(f => f.split('/').pop().split('\\').pop()).join(', ') || 'None'
+    },
+    {
+      num: 'STAGE 2',
+      title: '🔍 AST Analysis',
+      count: '5 App Services',
+      status: 'success',
+      statusText: 'PARSED',
+      detail: 'auth, notifications, payments, search, shared'
+    },
+    {
+      num: 'STAGE 3',
+      title: '📋 Scope Contract',
+      count: `${tested.length} Tested / ${skipped.length} Skipped`,
+      status: 'success',
+      statusText: 'RESOLVED',
+      detail: `Tested: [${tested.join(', ')}] | Skipped: [${skipped.join(', ')}]`
+    },
+    {
+      num: 'STAGE 4',
+      title: '🧪 Test Matrix',
+      count: `${tested.length} Matrix Job(s)`,
+      status: tested.length > 0 ? 'success' : 'skipped',
+      statusText: tested.length > 0 ? 'EXECUTED' : 'SKIPPED',
+      detail: tested.length > 0 ? tested.join(', ') : 'No test jobs needed'
+    },
+    {
+      num: 'STAGE 5',
+      title: '🐳 Docker Build',
+      count: `${toBuild.length} Image(s)`,
+      status: toBuild.length > 0 ? 'success' : 'skipped',
+      statusText: toBuild.length > 0 ? 'BUILT' : 'SKIPPED',
+      detail: toBuild.length > 0 ? toBuild.map(s => `blastradius-${s}`).join(', ') : 'No images to build'
+    },
+    {
+      num: 'STAGE 6',
+      title: '🚀 Deploy Scope',
+      count: `${toDeploy.length} Service(s)`,
+      status: toDeploy.length > 0 ? 'success' : 'skipped',
+      statusText: toDeploy.length > 0 ? 'TARGETED' : 'SKIPPED',
+      detail: toDeploy.length > 0 ? toDeploy.join(', ') : 'None'
+    }
+  ];
+
+  container.innerHTML = stages.map(st => `
+    <div class="pipeline-stage" title="${st.detail}">
+      <div class="pipeline-stage-num">${st.num}</div>
+      <div class="pipeline-stage-title">${st.title}</div>
+      <div class="pipeline-stage-count">${st.count}</div>
+      <span class="pipeline-stage-status ${st.status}">${st.statusText}</span>
+    </div>
+  `).join('');
+}
+
+function switchTab(tabId) {
+  const validTabs = ['overview', 'scope', 'pipeline', 'containers', 'load-balancer', 'history'];
+  const activeTab = validTabs.includes(tabId) ? tabId : 'overview';
+
+  document.querySelectorAll('.tab-link').forEach(btn => {
+    if (btn.getAttribute('data-tab') === activeTab) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  document.querySelectorAll('.tab-pane').forEach(pane => {
+    if (pane.id === `tab-${activeTab}`) {
+      pane.classList.add('active');
+      pane.style.display = 'block';
+    } else {
+      pane.classList.remove('active');
+      pane.style.display = 'none';
+    }
+  });
+
+  if (window.location.hash !== `#${activeTab}`) {
+    history.replaceState(null, null, `#${activeTab}`);
+  }
+
+  if (activeTab === 'scope') {
+    setTimeout(() => {
+      if (network && typeof network.fit === 'function') {
+        network.fit({ animation: false });
+      }
+    }, 60);
+  }
+}
+
+function initTabs() {
+  const hash = window.location.hash.replace(/^#/, '');
+  switchTab(hash || 'overview');
+
+  window.addEventListener('hashchange', () => {
+    const newHash = window.location.hash.replace(/^#/, '');
+    switchTab(newHash || 'overview');
+  });
+}
+
 function initUI() {
+  initTabs();
+
   const select = document.getElementById('scenario-select');
   select.addEventListener('change', (e) => {
     const key = e.target.value;
@@ -1469,6 +1763,9 @@ function initUI() {
     renderStats();
     renderScopeContract();
     renderServiceList();
+    renderOverviewChips();
+    renderSavingsBaselineBar();
+    renderPipelineStages();
     const firstSvc = currentBlastRadius.changedServices[0] || currentBlastRadius.affectedServices[0] || 'auth';
     selectService(firstSvc);
   });
@@ -1526,6 +1823,12 @@ window.fitGraph = fitGraph;
 window.switchLogTab = switchLogTab;
 window.selectService = selectService;
 window.refreshDashboard = refreshDashboard;
+window.switchTab = switchTab;
+window.selectServiceAndInspect = selectServiceAndInspect;
+window.filterContainers = filterContainers;
+window.sortContainers = sortContainers;
+window.inspectContainerRow = inspectContainerRow;
+window.filterHistory = filterHistory;
 
 // Auto-recheck on window focus when user switches back to browser tab
 window.addEventListener('focus', () => {

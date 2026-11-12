@@ -39,365 +39,476 @@
       <label for="scenario-select" style="font-size: 0.85rem; color: var(--text-secondary);">Scope Mode:</label>
       <select id="scenario-select" class="scenario-select">
         <option value="current">Current Run [CONTRACT / LAST-RUN]</option>
-        <option value="auth_only">Simulate: 'auth' Changed [SIMULATED]</option>
-        <option value="search_only">Simulate: 'search' Changed [SIMULATED]</option>
-        <option value="notifications_only">Simulate: 'notifications' Changed [SIMULATED]</option>
-        <option value="shared_only">Simulate: 'shared' Changed (Full Rebuild) [SIMULATED]</option>
+        <option value="auth_only">Simulate: 'auth' Changed [SEEDED]</option>
+        <option value="search_only">Simulate: 'search' Changed [SEEDED]</option>
+        <option value="notifications_only">Simulate: 'notifications' Changed [SEEDED]</option>
+        <option value="shared_only">Simulate: 'shared' Changed (Full Rebuild) [SEEDED]</option>
       </select>
       <button class="btn" id="btn-refresh" onclick="window.refreshDashboard()">↻ Refresh</button>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="container">
-    <!-- Live CI Sync Status Banner -->
-    <div class="ci-banner" id="ci-banner">
-      <div class="ci-banner-left">
-        <span class="live-dot" id="live-indicator"></span>
-        <span class="ci-label">Continuous Integration:</span>
-        <span class="ci-status-text" id="ci-status-text">Synchronizing...</span>
+  <!-- Top Verdict Banner (Linear/Vercel density) -->
+  <div class="verdict-banner-container">
+    <div class="verdict-banner" id="verdict-banner">
+      <div class="verdict-main">
+        <span class="verdict-icon">⚡</span>
+        <span class="verdict-text" id="verdict-text">Synchronizing selective CI verdict...</span>
       </div>
-      <div class="ci-banner-right">
-        <span class="ci-detail-tag" id="ci-branch-tag">branch: master</span>
-        <span class="ci-detail-tag" id="ci-commit-tag">commit: ...</span>
-        <span class="ci-time" id="ci-time-tag">just now</span>
+      <span class="source-pill last-run" id="verdict-source-badge">LAST RUN</span>
+    </div>
+  </div>
+
+  <!-- Tabbed Navigation Bar (Synced to URL Hash #overview, #scope, #pipeline, #containers, #load-balancer, #history) -->
+  <div class="nav-tabs-container">
+    <nav class="nav-tabs" role="tablist">
+      <button class="tab-link active" data-tab="overview" onclick="switchTab('overview')">📊 Overview</button>
+      <button class="tab-link" data-tab="scope" onclick="switchTab('scope')">📋 Scope Contract</button>
+      <button class="tab-link" data-tab="pipeline" onclick="switchTab('pipeline')">🔄 Pipeline</button>
+      <button class="tab-link" data-tab="containers" onclick="switchTab('containers')">🐳 Containers</button>
+      <button class="tab-link" data-tab="load-balancer" onclick="switchTab('load-balancer')">⚖️ Load Balancer</button>
+      <button class="tab-link" data-tab="history" onclick="switchTab('history')">📈 History</button>
+    </nav>
+  </div>
+
+  <!-- Main Container with Tab Panes -->
+  <main class="container">
+
+    <!-- ====================================================================
+         TAB 1: OVERVIEW
+         ==================================================================== -->
+    <div id="tab-overview" class="tab-pane active">
+      <!-- Live CI Sync Status Banner -->
+      <div class="ci-banner" id="ci-banner">
+        <div class="ci-banner-left">
+          <span class="live-dot" id="live-indicator"></span>
+          <span class="ci-label">Continuous Integration:</span>
+          <span class="ci-status-text" id="ci-status-text">Synchronizing...</span>
+        </div>
+        <div class="ci-banner-right">
+          <span class="ci-detail-tag" id="ci-branch-tag">branch: master</span>
+          <span class="ci-detail-tag" id="ci-commit-tag">commit: ...</span>
+          <span class="ci-time" id="ci-time-tag">just now</span>
+        </div>
+      </div>
+
+      <!-- Stat Metric Cards -->
+      <section class="stats-grid">
+        <div class="stat-card total">
+          <div class="stat-header">
+            <span class="stat-title">Monorepo Services</span>
+            <span class="stat-icon">📦</span>
+          </div>
+          <div class="stat-value" id="stat-total">5</div>
+          <div class="stat-subtext">Discovered via static AST</div>
+        </div>
+
+        <div class="stat-card changed">
+          <div class="stat-header">
+            <span class="stat-title">Directly Changed</span>
+            <span class="stat-icon">🎯</span>
+          </div>
+          <div class="stat-value" id="stat-changed">0</div>
+          <div class="stat-subtext">Detected in git diff</div>
+        </div>
+
+        <div class="stat-card affected">
+          <div class="stat-header">
+            <span class="stat-title">Affected (Must Test)</span>
+            <span class="stat-icon">🧪</span>
+          </div>
+          <div class="stat-value" id="stat-affected">0</div>
+          <div class="stat-subtext">Within active blast radius</div>
+        </div>
+
+        <div class="stat-card skipped">
+          <div class="stat-header">
+            <span class="stat-title">Safely Skipped</span>
+            <span class="stat-icon">🛡️</span>
+          </div>
+          <div class="stat-value" id="stat-skipped">5</div>
+          <div class="stat-subtext">Zero downstream risk</div>
+        </div>
+
+        <div class="stat-card saved">
+          <div class="stat-header">
+            <span class="stat-title">CI Compute Saved</span>
+            <span class="stat-icon">⚡</span>
+          </div>
+          <div class="stat-value" id="stat-saved">~0%</div>
+          <div class="stat-subtext" id="stat-saved-mins">0.0 mins saved this run</div>
+        </div>
+      </section>
+
+      <!-- 5 Application Service Chips -->
+      <div style="font-size: 0.85rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.6rem;">
+        Application Service Impact Chips (Click to Inspect)
+      </div>
+      <div class="service-chips-grid" id="overview-service-chips">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+
+      <!-- CI Compute Savings Baseline Bar (12.5m Total Baseline) -->
+      <div class="savings-baseline-card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.9rem; font-weight: 700; color: #f8fafc;">CI Compute Savings vs 12.5m Baseline</span>
+          <span class="source-pill last-run" id="badge-savings-bar-source">LAST RUN</span>
+        </div>
+        <div class="savings-bar-track">
+          <div class="savings-bar-tested" id="savings-bar-tested" style="width: 0%;" title="Tested Services Execution Time"></div>
+          <div class="savings-bar-saved" id="savings-bar-saved" style="width: 100%;" title="Skipped Services Compute Saved"></div>
+        </div>
+        <div class="savings-bar-legend">
+          <span id="savings-bar-tested-label" style="color: #fbbf24;">Tested: 0.0m</span>
+          <span style="color: #94a3b8; font-weight: 600;">12.5m Total Monorepo Baseline (5 services × 2.5 min)</span>
+          <span id="savings-bar-saved-label" style="color: #34d399;">Skipped (Saved): 12.5m</span>
+        </div>
+      </div>
+
+      <!-- Cluster Replica Health Summary Row -->
+      <div class="infra-card" style="margin-bottom: 1.5rem;">
+        <div class="infra-card-header">
+          <span class="infra-card-title">🖥️ API Service Cluster & Replica Health</span>
+          <span class="source-pill live" id="badge-api-source">Checking...</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="font-size: 0.85rem; color: var(--text-secondary);">
+            Cluster Replicas (<code id="active-replica-count">0/3 active</code>):
+          </div>
+          <div class="replica-row" id="replica-badges-container">
+            <span class="replica-badge" id="rep-api-1">api-1: ...</span>
+            <span class="replica-badge" id="rep-api-2">api-2: ...</span>
+            <span class="replica-badge" id="rep-api-3">api-3: ...</span>
+          </div>
+          <div style="font-size: 0.82rem; color: #64748b;" id="infra-redis-status">
+            Redis Cache: checking...
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Stat Metric Cards -->
-    <section class="stats-grid">
-      <div class="stat-card total">
-        <div class="stat-header">
-          <span class="stat-title">Monorepo Services</span>
-          <span class="stat-icon">📦</span>
-        </div>
-        <div class="stat-value" id="stat-total">5</div>
-        <div class="stat-subtext">Discovered via static AST</div>
-      </div>
-
-      <div class="stat-card changed">
-        <div class="stat-header">
-          <span class="stat-title">Directly Changed</span>
-          <span class="stat-icon">🎯</span>
-        </div>
-        <div class="stat-value" id="stat-changed">1</div>
-        <div class="stat-subtext">Detected in git diff</div>
-      </div>
-
-      <div class="stat-card affected">
-        <div class="stat-header">
-          <span class="stat-title">Affected (Must Test)</span>
-          <span class="stat-icon">🧪</span>
-        </div>
-        <div class="stat-value" id="stat-affected">3</div>
-        <div class="stat-subtext">Within active blast radius</div>
-      </div>
-
-      <div class="stat-card skipped">
-        <div class="stat-header">
-          <span class="stat-title">Safely Skipped</span>
-          <span class="stat-icon">🛡️</span>
-        </div>
-        <div class="stat-value" id="stat-skipped">2</div>
-        <div class="stat-subtext">Zero downstream risk</div>
-      </div>
-
-      <div class="stat-card saved">
-        <div class="stat-header">
-          <span class="stat-title">CI Compute Saved</span>
-          <span class="stat-icon">⚡</span>
-        </div>
-        <div class="stat-value" id="stat-saved">~40%</div>
-        <div class="stat-subtext" id="stat-saved-mins">~5.0 mins saved this run</div>
-      </div>
-    </section>
-
-    <!-- BlastRadius 2.0 Infrastructure, Load Balancing & Cloud Status Grid -->
-    <section class="infra-grid">
-      <!-- Card 1: API Cluster & Replicas -->
-      <div class="infra-card">
+    <!-- ====================================================================
+         TAB 2: SCOPE CONTRACT
+         ==================================================================== -->
+    <div id="tab-scope" class="tab-pane" style="display: none;">
+      <!-- Selective Deployment Scope Contract (Phase 1) -->
+      <section class="infra-card" style="margin-bottom: 1.5rem;">
         <div class="infra-card-header">
-          <span class="infra-card-title">🖥️ API Service Cluster</span>
-          <span class="source-pill live" id="badge-api-source">Checking...</span>
+          <span class="infra-card-title">📋 Selective Deployment Scope Contract (Phase 1)</span>
+          <span class="source-pill last-run" id="badge-contract-source">CONTRACT / LAST-RUN</span>
         </div>
-        <div style="font-size: 0.82rem; color: var(--text-secondary);">
-          Explicit Replicas (<code id="active-replica-count">0/3 active</code>):
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; font-size: 0.82rem;">
+          <div>🎯 <strong>Directly Changed:</strong> <code id="scope-directly-changed">None</code></div>
+          <div>⚡ <strong>Transitively Affected:</strong> <code id="scope-transitively-affected">None</code></div>
+          <div>🧪 <strong>Tested:</strong> <code id="scope-tested">None</code></div>
+          <div>📦 <strong>To Build:</strong> <code id="scope-to-build">None</code></div>
+          <div>🚀 <strong>To Deploy:</strong> <code id="scope-to-deploy">None</code></div>
+          <div>🛡️ <strong>Skipped:</strong> <code id="scope-skipped">None</code></div>
         </div>
-        <div class="replica-row" id="replica-badges-container">
-          <span class="replica-badge" id="rep-api-1">api-1: ...</span>
-          <span class="replica-badge" id="rep-api-2">api-2: ...</span>
-          <span class="replica-badge" id="rep-api-3">api-3: ...</span>
+        <div class="formula-box">
+          CI Compute Savings Formula: <strong>Time Saved = (Total Application Services [5] − Tested Services) × 2.5 min</strong> (when affected &gt; 0; 0 min / N/A when affected = 0) | Full Rebuild Fallback: <span id="scope-full-rebuild">false</span> (<span id="scope-rebuild-reason">None</span>)
         </div>
-        <div style="font-size: 0.75rem; color: #64748b;" id="infra-redis-status">
-          Redis Cache: checking...
-        </div>
-      </div>
+      </section>
 
-      <!-- Card 2: NGINX Load Balancer -->
-      <div class="infra-card">
-        <div class="infra-card-header">
-          <span class="infra-card-title">⚖️ NGINX Load Balancer</span>
-          <span class="source-pill live" id="badge-lb-source">Active</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary);">
-          <span>Algorithm: <strong>Round-Robin</strong></span>
-          <span id="lb-fails-text">Passive Fails: 0</span>
-        </div>
-        <div>
-          <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.2rem;">
-            Replica Traffic Distribution: <span id="lb-source-label" style="color: #64748b; font-size: 0.7rem;">(source: live counter)</span>
-          </div>
-          <div id="traffic-distribution-container">
-            <div class="dist-bar-container" id="dist-bar-container" style="display: none;">
-              <div class="dist-bar-segment api-1" id="dist-api-1" style="width: 0%;" title="api-1"></div>
-              <div class="dist-bar-segment api-2" id="dist-api-2" style="width: 0%;" title="api-2"></div>
-              <div class="dist-bar-segment api-3" id="dist-api-3" style="width: 0%;" title="api-3"></div>
+      <!-- Layout: Interactive Graph & Service Inspector -->
+      <div class="content-layout">
+        <!-- Vis Network Graph Panel -->
+        <section class="graph-panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span>🕸️</span> Dependency Topology & Blast Impact Traversal
             </div>
-            <div id="traffic-distribution-tallies" style="display: none; justify-content: space-between; font-size: 0.72rem; color: #64748b; margin-top: 0.2rem;">
-              <span id="tally-api-1">api-1: 0</span>
-              <span id="tally-api-2">api-2: 0</span>
-              <span id="tally-api-3">api-3: 0</span>
-            </div>
-            <div id="traffic-distribution-unavailable" style="font-size: 0.75rem; color: #f87171; margin-top: 0.25rem;">
-              Traffic Distribution: unavailable (start docker compose)
+            <div style="display: flex; gap: 0.85rem; align-items: center;">
+              <div class="graph-legend">
+                <div class="legend-item">
+                  <span class="legend-dot changed"></span> Changed (Root)
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot affected"></span> Transitive Test
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot skipped"></span> Skipped
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot shared"></span> Shared Core
+                </div>
+              </div>
+              <div class="graph-controls">
+                <button class="icon-btn" id="btn-zoom-in" title="Zoom In" onclick="zoomGraph(1.2)">➕</button>
+                <button class="icon-btn" id="btn-zoom-out" title="Zoom Out" onclick="zoomGraph(0.8)">➖</button>
+                <button class="icon-btn" id="btn-zoom-fit" title="Fit All Nodes" onclick="fitGraph()">⛶</button>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Card 3: Container Monitoring -->
-      <div class="infra-card" id="card-container-metrics">
+          <div id="network-container"></div>
+        </section>
+
+        <!-- Sidebar: Service Inspector & Monorepo Roster -->
+        <aside class="sidebar-panel">
+          <!-- Node Inspector Card -->
+          <div class="side-card">
+            <div class="side-title">
+              <span>🔍</span> Service Inspector
+            </div>
+            <div class="inspector-body">
+              <div class="inspector-field">
+                <span class="field-label">Target Service</span>
+                <span class="field-value" id="inspector-name">auth</span>
+              </div>
+
+              <div class="inspector-field">
+                <span class="field-label">CI Decision</span>
+                <div id="inspector-status">
+                  <span class="badge test">Direct Change (Rebuild & Test)</span>
+                </div>
+              </div>
+
+              <div class="inspector-field">
+                <span class="field-label">Impact Explanation</span>
+                <span id="inspector-reason" style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.4;">
+                  Directly modified in git diff.
+                </span>
+                <div id="inspector-path" class="path-pill" style="display: none;"></div>
+              </div>
+
+              <div class="inspector-field">
+                <span class="field-label">Upstream Dependencies (Who I depend on)</span>
+                <span class="field-value" id="inspector-deps">shared</span>
+              </div>
+
+              <div class="inspector-field">
+                <span class="field-label">Downstream Callers (Who depends on me)</span>
+                <span class="field-value" id="inspector-callers">payments</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Service Roster List -->
+          <div class="side-card">
+            <div class="side-title">
+              <span>📋</span> Monorepo Services
+            </div>
+            <div class="service-list" id="service-list">
+              <!-- Populated dynamically by app.js -->
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         TAB 3: PIPELINE
+         ==================================================================== -->
+    <div id="tab-pipeline" class="tab-pane" style="display: none;">
+      <!-- Horizontal Stage View (GitHub Actions / Pipeline Structure) -->
+      <section class="infra-card" style="margin-bottom: 1.5rem;">
         <div class="infra-card-header">
-          <span class="infra-card-title">📊 Container Metrics</span>
-          <span class="source-pill unavailable" id="badge-cadvisor-source">UNAVAILABLE</span>
+          <span class="infra-card-title">🔄 Selective CI Pipeline Stages</span>
+          <span class="source-pill last-run" id="badge-pipeline-source">LAST RUN</span>
         </div>
-        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.35rem;" id="cadvisor-status-text">
-          Container metrics unavailable (start docker compose)
+        <div class="pipeline-stages" id="pipeline-stages-container">
+          <!-- Populated dynamically by renderPipelineStages() -->
         </div>
-        <div id="container-metrics-content" style="display: none;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-            <label for="container-select" style="font-size: 0.72rem; color: #94a3b8;">Inspect Container:</label>
-            <select id="container-select" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; font-size: 0.72rem; padding: 2px 6px;">
-              <option value="all">All (8 Containers Summary)</option>
-              <option value="redis">redis</option>
-              <option value="api-1">api-1</option>
-              <option value="api-2">api-2</option>
-              <option value="api-3">api-3</option>
-              <option value="nginx">nginx</option>
-              <option value="prometheus">prometheus</option>
-              <option value="grafana">grafana</option>
-              <option value="cadvisor">cadvisor</option>
-            </select>
+      </section>
+
+      <!-- Docker CI Test Execution Logs Section -->
+      <section class="test-logs-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div class="panel-title" style="display: flex; align-items: center; gap: 0.5rem;">
+            <span>🐳</span> Isolated Docker Test Execution Logs (Native Matrix Simulation)
+            <span class="source-pill seeded" id="badge-docker-logs">SEEDED</span>
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; font-size: 0.78rem;" id="container-stat-grid">
-            <div>CPU: <strong id="cadvisor-cpu" title="">--</strong></div>
-            <div>Memory: <strong id="cadvisor-mem" title="">--</strong></div>
-            <div>Health: <strong id="cadvisor-health" title="">--</strong></div>
-            <div>Restarts: <strong id="cadvisor-restarts" title="">--</strong></div>
+          <div class="log-service-tabs" id="log-tabs">
+            <button class="tab-btn active" onclick="switchLogTab('auth')">auth (4/4 passed)</button>
+            <button class="tab-btn" onclick="switchLogTab('payments')">payments (3/3 passed)</button>
+            <button class="tab-btn" onclick="switchLogTab('notifications')">notifications (3/3 passed)</button>
+            <button class="tab-btn" onclick="switchLogTab('shared')">shared (4/4 passed)</button>
+            <button class="tab-btn" onclick="switchLogTab('search')">search (4/4 passed)</button>
           </div>
-          <div id="container-reason-text" style="font-size: 0.7rem; color: #f87171; margin-top: 0.25rem; display: none;"></div>
-          <div id="containers-table-container" style="margin-top: 0.5rem; max-height: 120px; overflow-y: auto; font-size: 0.7rem;">
-            <table style="width: 100%; border-collapse: collapse; text-align: left; color: #94a3b8;">
+        </div>
+        <div class="terminal-container">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <span class="terminal-title" id="terminal-title">docker run --rm blastradius-auth:latest</span>
+            <span class="terminal-badge" id="terminal-badge">EXIT CODE: 0 (PASS) [SEEDED]</span>
+          </div>
+          <pre class="terminal-body" id="terminal-output"><code>Loading test run output...</code></pre>
+        </div>
+      </section>
+    </div>
+
+    <!-- ====================================================================
+         TAB 4: CONTAINERS
+         ==================================================================== -->
+    <div id="tab-containers" class="tab-pane" style="display: none;">
+      <section class="infra-card" id="card-container-metrics">
+        <div class="infra-card-header">
+          <span class="infra-card-title">📊 Compose Container Health & Resource Telemetry</span>
+          <span class="source-pill live" id="badge-cadvisor-source">LIVE</span>
+        </div>
+
+        <div class="filter-bar">
+          <div class="filter-btn-group" id="container-status-filters">
+            <button class="filter-btn active" onclick="filterContainers('all')">All Containers (8)</button>
+            <button class="filter-btn" onclick="filterContainers('healthy')">Healthy</button>
+            <button class="filter-btn" onclick="filterContainers('unhealthy')">Unhealthy</button>
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-secondary);" id="cadvisor-status-text">
+            8 Compose Containers Monitored (docker-api)
+          </div>
+        </div>
+
+        <div id="container-metrics-content">
+          <div style="overflow-x: auto;">
+            <table class="history-table" style="font-size: 0.82rem; width: 100%;">
               <thead>
-                <tr style="border-bottom: 1px solid #334155; color: #64748b;">
-                  <th style="padding: 2px 4px;">Service</th>
-                  <th style="padding: 2px 4px;">Health</th>
-                  <th style="padding: 2px 4px;">CPU</th>
-                  <th style="padding: 2px 4px;">Memory</th>
-                  <th style="padding: 2px 4px;">Restarts</th>
+                <tr>
+                  <th class="sortable-th" onclick="sortContainers('service')">Service <span class="sort-arrow" id="sort-service">▲</span></th>
+                  <th class="sortable-th" onclick="sortContainers('health')">Health <span class="sort-arrow" id="sort-health"></span></th>
+                  <th class="sortable-th" onclick="sortContainers('cpu_percent')">CPU % <span class="sort-arrow" id="sort-cpu"></span></th>
+                  <th class="sortable-th" onclick="sortContainers('memory_bytes')">Memory <span class="sort-arrow" id="sort-mem"></span></th>
+                  <th class="sortable-th" onclick="sortContainers('restart_count')">Restarts <span class="sort-arrow" id="sort-restarts"></span></th>
+                  <th class="sortable-th" onclick="sortContainers('uptime_seconds')">Uptime <span class="sort-arrow" id="sort-uptime"></span></th>
+                  <th>Source</th>
                 </tr>
               </thead>
               <tbody id="containers-table-body">
               </tbody>
             </table>
           </div>
+
+          <!-- Selected Container Details Drawer -->
+          <div id="container-detail-drawer" style="margin-top: 1rem; padding: 0.85rem; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span style="font-size: 0.85rem; font-weight: 700; color: #f8fafc;" id="drawer-container-title">Container Telemetry Summary</span>
+              <select id="container-select" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; font-size: 0.75rem; padding: 3px 8px;">
+                <option value="all">All (8 Containers Summary)</option>
+                <option value="redis">redis</option>
+                <option value="api-1">api-1</option>
+                <option value="api-2">api-2</option>
+                <option value="api-3">api-3</option>
+                <option value="nginx">nginx</option>
+                <option value="prometheus">prometheus</option>
+                <option value="grafana">grafana</option>
+                <option value="cadvisor">cadvisor</option>
+              </select>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem; font-size: 0.82rem;" id="container-stat-grid">
+              <div>CPU: <strong id="cadvisor-cpu">--</strong></div>
+              <div>Memory: <strong id="cadvisor-mem">--</strong></div>
+              <div>Health: <strong id="cadvisor-health">--</strong></div>
+              <div>Restarts: <strong id="cadvisor-restarts">--</strong></div>
+            </div>
+            <div id="container-reason-text" style="font-size: 0.75rem; color: #f87171; margin-top: 0.4rem; display: none;"></div>
+          </div>
         </div>
-        <div id="container-metrics-unavailable" style="font-size: 0.75rem; color: #f87171; margin-top: 0.25rem;">
+
+        <div id="container-metrics-unavailable" style="font-size: 0.8rem; color: #f87171; margin-top: 0.5rem; display: none;">
           Container metrics unavailable (start docker compose)
         </div>
-      </div>
-
-      <!-- Card 4: Cloud Deployment (AWS ECS / Fargate) -->
-      <div class="infra-card">
-        <div class="infra-card-header">
-          <span class="infra-card-title">☁️ AWS ECS Fargate</span>
-          <span class="source-pill unavailable" id="badge-cloud-source">GATED / LOCAL</span>
-        </div>
-        <div style="font-size: 0.8rem; color: var(--text-secondary);">
-          Cluster: <code id="cloud-cluster-name">blastradius-cluster</code>
-        </div>
-        <div style="font-size: 0.78rem; color: #94a3b8;" id="cloud-status-text">
-          Cloud pipeline gated by <code>CLOUD_DEPLOY_ENABLED=false</code>. Running on local Compose stack.
-        </div>
-      </div>
-    </section>
-
-    <!-- Selective Deployment Scope Contract & Mathematical Formula -->
-    <section class="infra-card" style="margin-bottom: 1.5rem;">
-      <div class="infra-card-header">
-        <span class="infra-card-title">📋 Selective Deployment Scope Contract (Phase 1)</span>
-        <span class="source-pill last-run" id="badge-contract-source">CONTRACT / LAST-RUN</span>
-      </div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; font-size: 0.82rem;">
-        <div>🎯 <strong>Directly Changed:</strong> <code id="scope-directly-changed">None</code></div>
-        <div>⚡ <strong>Transitively Affected:</strong> <code id="scope-transitively-affected">None</code></div>
-        <div>🧪 <strong>Tested:</strong> <code id="scope-tested">None</code></div>
-        <div>📦 <strong>To Build:</strong> <code id="scope-to-build">None</code></div>
-        <div>🚀 <strong>To Deploy:</strong> <code id="scope-to-deploy">None</code></div>
-        <div>🛡️ <strong>Skipped:</strong> <code id="scope-skipped">None</code></div>
-      </div>
-      <div class="formula-box">
-        CI Compute Savings Formula: <strong>Time Saved = (Total Application Services [5] − Tested Services) × 2.5 min</strong> (when affected &gt; 0; 0 min / N/A when affected = 0) | Full Rebuild Fallback: <span id="scope-full-rebuild">false</span> (<span id="scope-rebuild-reason">None</span>)
-      </div>
-    </section>
-
-    <!-- Layout: Interactive Graph & Service Inspector -->
-    <div class="content-layout">
-      <!-- Vis Network Graph Panel -->
-      <section class="graph-panel">
-        <div class="panel-header">
-          <div class="panel-title">
-            <span>🕸️</span> Dependency Topology & Blast Impact Traversal
-          </div>
-          <div style="display: flex; gap: 0.85rem; align-items: center;">
-            <div class="graph-legend">
-              <div class="legend-item">
-                <span class="legend-dot changed"></span> Changed (Root)
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot affected"></span> Transitive Test
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot skipped"></span> Skipped
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot shared"></span> Shared Core
-              </div>
-            </div>
-            <div class="graph-controls">
-              <button class="icon-btn" id="btn-zoom-in" title="Zoom In" onclick="zoomGraph(1.2)">➕</button>
-              <button class="icon-btn" id="btn-zoom-out" title="Zoom Out" onclick="zoomGraph(0.8)">➖</button>
-              <button class="icon-btn" id="btn-zoom-fit" title="Fit All Nodes" onclick="fitGraph()">⛶</button>
-            </div>
-          </div>
-        </div>
-
-        <div id="network-container"></div>
       </section>
-
-      <!-- Sidebar: Service Inspector & Monorepo Roster -->
-      <aside class="sidebar-panel">
-        <!-- Node Inspector Card -->
-        <div class="side-card">
-          <div class="side-title">
-            <span>🔍</span> Service Inspector
-          </div>
-          <div class="inspector-body">
-            <div class="inspector-field">
-              <span class="field-label">Target Service</span>
-              <span class="field-value" id="inspector-name">auth</span>
-            </div>
-
-            <div class="inspector-field">
-              <span class="field-label">CI Decision</span>
-              <div id="inspector-status">
-                <span class="badge test">Direct Change (Rebuild & Test)</span>
-              </div>
-            </div>
-
-            <div class="inspector-field">
-              <span class="field-label">Impact Explanation</span>
-              <span id="inspector-reason" style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.4;">
-                Directly modified in git diff.
-              </span>
-              <div id="inspector-path" class="path-pill" style="display: none;"></div>
-            </div>
-
-            <div class="inspector-field">
-              <span class="field-label">Upstream Dependencies (Who I depend on)</span>
-              <span class="field-value" id="inspector-deps">shared</span>
-            </div>
-
-            <div class="inspector-field">
-              <span class="field-label">Downstream Callers (Who depends on me)</span>
-              <span class="field-value" id="inspector-callers">payments</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Service Roster List -->
-        <div class="side-card">
-          <div class="side-title">
-            <span>📋</span> Monorepo Services
-          </div>
-          <div class="service-list" id="service-list">
-            <!-- Populated dynamically by app.js -->
-          </div>
-        </div>
-      </aside>
     </div>
 
-    <!-- Docker CI Test Execution Logs Section -->
-    <section class="test-logs-section">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-        <div class="panel-title" style="display: flex; align-items: center; gap: 0.5rem;">
-          <span>🐳</span> Isolated Docker Test Execution Logs (Native Matrix Simulation)
-          <span class="source-pill seeded" id="badge-docker-logs">SEEDED</span>
+    <!-- ====================================================================
+         TAB 5: LOAD BALANCER
+         ==================================================================== -->
+    <div id="tab-load-balancer" class="tab-pane" style="display: none;">
+      <!-- Card 1: NGINX Load Balancer -->
+      <section class="infra-card" style="margin-bottom: 1.5rem;">
+        <div class="infra-card-header">
+          <span class="infra-card-title">⚖️ NGINX Load Balancer & Traffic Routing</span>
+          <span class="source-pill live" id="badge-lb-source">LIVE</span>
         </div>
-        <div class="log-service-tabs" id="log-tabs">
-          <button class="tab-btn active" onclick="switchLogTab('auth')">auth (4/4 passed)</button>
-          <button class="tab-btn" onclick="switchLogTab('payments')">payments (3/3 passed)</button>
-          <button class="tab-btn" onclick="switchLogTab('notifications')">notifications (3/3 passed)</button>
-          <button class="tab-btn" onclick="switchLogTab('shared')">shared (4/4 passed)</button>
-          <button class="tab-btn" onclick="switchLogTab('search')">search (4/4 passed)</button>
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+          <span>Algorithm: <strong>Round-Robin (Least-Connection Capable)</strong></span>
+          <span id="lb-fails-text">Passive Fails: 0</span>
         </div>
-      </div>
-      <div class="terminal-container">
-        <div class="terminal-header">
-          <div class="terminal-dots">
-            <span class="dot red"></span>
-            <span class="dot yellow"></span>
-            <span class="dot green"></span>
+        <div>
+          <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.35rem;">
+            Replica Traffic Distribution: <span id="lb-source-label" style="color: #64748b; font-size: 0.75rem;">(source: live counter, routes: /api/*)</span>
           </div>
-          <span class="terminal-title" id="terminal-title">docker run --rm blastradius-auth:latest</span>
-          <span class="terminal-badge" id="terminal-badge">EXIT CODE: 0 (PASS)</span>
+          <div id="traffic-distribution-container">
+            <div class="dist-bar-container" id="dist-bar-container" style="display: none; height: 18px;">
+              <div class="dist-bar-segment api-1" id="dist-api-1" style="width: 0%;" title="api-1"></div>
+              <div class="dist-bar-segment api-2" id="dist-api-2" style="width: 0%;" title="api-2"></div>
+              <div class="dist-bar-segment api-3" id="dist-api-3" style="width: 0%;" title="api-3"></div>
+            </div>
+            <div id="traffic-distribution-tallies" style="display: none; justify-content: space-between; font-size: 0.8rem; color: #94a3b8; margin-top: 0.4rem;">
+              <span id="tally-api-1">api-1: 0 (0%)</span>
+              <span id="tally-api-2">api-2: 0 (0%)</span>
+              <span id="tally-api-3">api-3: 0 (0%)</span>
+            </div>
+            <div id="traffic-distribution-unavailable" style="font-size: 0.8rem; color: #94a3b8; margin-top: 0.35rem;">
+              no traffic yet (send requests to /api/*)
+            </div>
+          </div>
         </div>
-        <pre class="terminal-body" id="terminal-output"><code>Loading test run output...</code></pre>
-      </div>
-    </section>
+      </section>
 
-    <!-- History & Cumulative Savings Section -->
-    <section class="history-section">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div class="panel-title">
-          <span>📈</span> CI Compute History & Cumulative Savings
+      <!-- Card 2: Cloud Deployment (AWS ECS / Fargate) -->
+      <section class="infra-card">
+        <div class="infra-card-header">
+          <span class="infra-card-title">☁️ AWS ECS Fargate Infrastructure</span>
+          <span class="source-pill unavailable" id="badge-cloud-source">GATED / LOCAL</span>
         </div>
-        <div id="cumulative-saved-text" style="color: #38bdf8; font-weight: 600; font-size: 0.88rem;">
-          Total Cumulative Savings: ~32.5 CI minutes saved
+        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.4rem;">
+          Cluster: <code id="cloud-cluster-name">blastradius-cluster</code>
         </div>
-      </div>
+        <div style="font-size: 0.8rem; color: #94a3b8;" id="cloud-status-text">
+          Cloud pipeline gated by <code>CLOUD_DEPLOY_ENABLED=false</code>. Running on local Compose stack.
+        </div>
+      </section>
+    </div>
 
-      <div class="history-table-container">
-        <table class="history-table">
-          <thead>
-            <tr>
-              <th>Source</th>
-              <th>Run / PR</th>
-              <th>Branch</th>
-              <th>Commit</th>
-              <th>Direct Changes</th>
-              <th>Tested</th>
-              <th>Skipped</th>
-              <th>% Saved</th>
-              <th>Compute Saved</th>
-            </tr>
-          </thead>
-          <tbody id="history-table-body">
-            <!-- Populated dynamically by app.js -->
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <!-- ====================================================================
+         TAB 6: HISTORY
+         ==================================================================== -->
+    <div id="tab-history" class="tab-pane" style="display: none;">
+      <section class="history-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+          <div class="panel-title">
+            <span>📈</span> CI Compute History & Cumulative Savings
+          </div>
+          <div id="cumulative-saved-text" style="color: #38bdf8; font-weight: 600; font-size: 0.88rem;">
+            Total Cumulative Savings: ~32.5 CI minutes saved
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label for="history-branch-filter" style="font-size: 0.8rem; color: var(--text-secondary);">Filter Branch:</label>
+            <input type="text" id="history-branch-filter" placeholder="e.g. main, fix, perf..." style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 3px 8px; font-size: 0.78rem;" oninput="filterHistory()" />
+          </div>
+        </div>
+
+        <div class="history-table-container">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Source</th>
+                <th>Run / PR</th>
+                <th>Branch</th>
+                <th>Commit</th>
+                <th>Direct Changes</th>
+                <th>Tested</th>
+                <th>Skipped</th>
+                <th>% Saved</th>
+                <th>Compute Saved</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body">
+              <!-- Populated dynamically by app.js -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
   </main>
 
   <footer>
