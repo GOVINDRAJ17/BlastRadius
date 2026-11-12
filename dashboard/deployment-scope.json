@@ -1,62 +1,23 @@
 {
-  "commit_sha": "7ac140aace4b61696fbf6050ebddb1b2740b3299",
+  "commit_sha": "b38941de23d7b6ab1aeb0e9c3a01e16127eaf5d7",
   "base_ref": null,
   "changed_files": [
-    "docker-compose.yml"
+    "README.md"
   ],
   "changed_services": [],
   "directly_affected": [],
-  "transitively_affected": [
+  "transitively_affected": [],
+  "tested": [],
+  "to_build": [],
+  "to_deploy": [],
+  "skipped": [
     "auth",
     "notifications",
     "payments",
     "search",
     "shared"
   ],
-  "tested": [
-    "auth",
-    "notifications",
-    "payments",
-    "search",
-    "shared"
-  ],
-  "to_build": [
-    "auth",
-    "notifications",
-    "payments",
-    "search",
-    "shared"
-  ],
-  "to_deploy": [
-    "auth",
-    "notifications",
-    "payments",
-    "search",
-    "shared"
-  ],
-  "skipped": [],
-  "full_rebuild": true,
-  "full_rebuild_reason": "Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
-  "causal_paths": {
-    "auth": [
-      "root",
-      "auth"
-    ],
-    "notifications": [
-      "root",
-      "notifications"
-    ],
-    "payments": [
-      "root",
-      "payments"
-    ],
-    "search": [
-      "root",
-      "search"
-    ],
-    "shared": [
-      "root",
-      "shared"
-    ]
-  }
+  "full_rebuild": false,
+  "full_rebuild_reason": null,
+  "causal_paths": {}
 }

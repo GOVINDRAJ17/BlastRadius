@@ -830,8 +830,15 @@ function renderStats() {
   document.getElementById('stat-changed').textContent = blast.changedServices?.length || 0;
   document.getElementById('stat-affected').textContent = blast.affectedServices?.length || 0;
   document.getElementById('stat-skipped').textContent = blast.skippedServices?.length || 0;
-  document.getElementById('stat-saved').textContent = `~${metrics.percentSaved || 0}%`;
-  document.getElementById('stat-saved-mins').textContent = `~${metrics.estimatedTimeSavedMinutes || 0} mins saved this run`;
+  const pctSavedText = metrics.percentSaved !== null && metrics.percentSaved !== undefined
+    ? `~${metrics.percentSaved}%`
+    : 'N/A';
+  const minsSavedText = metrics.percentSaved !== null && metrics.percentSaved !== undefined
+    ? `~${metrics.estimatedTimeSavedMinutes || 0} mins saved this run`
+    : '0.0 mins (no tests required)';
+
+  document.getElementById('stat-saved').textContent = pctSavedText;
+  document.getElementById('stat-saved-mins').textContent = minsSavedText;
 
   // Update Continuous Integration Banner
   const statusEl = document.getElementById('ci-status-text');

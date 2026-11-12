@@ -20,3 +20,24 @@ test('5.a: .gitattributes change is not a runtime config and yields full_rebuild
   assert.equal(result.full_rebuild_reason, null);
   assert.deepEqual(result.to_deploy, []);
 });
+
+test('5.b: zero-affected change reports 0 minutes saved and percentSaved: null (N/A)', () => {
+  const result = computeBlastRadius(graph, ['README.md']);
+  assert.equal(result.affectedServices.length, 0);
+  assert.equal(result.metrics.estimatedTimeSavedMinutes, 0);
+  assert.equal(result.metrics.percentSaved, null);
+});
+
+test('5.b: single service change (search) reports 10 mins saved (80%)', () => {
+  const result = computeBlastRadius(graph, ['services/search/index.js']);
+  assert.deepEqual(result.affectedServices, ['search']);
+  assert.equal(result.metrics.estimatedTimeSavedMinutes, 10);
+  assert.equal(result.metrics.percentSaved, 80);
+});
+
+test('5.b: full rebuild (shared) reports 0 mins saved (0%)', () => {
+  const result = computeBlastRadius(graph, ['services/shared/index.js']);
+  assert.equal(result.full_rebuild, true);
+  assert.equal(result.metrics.estimatedTimeSavedMinutes, 0);
+  assert.equal(result.metrics.percentSaved, 0);
+});

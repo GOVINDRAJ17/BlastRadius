@@ -330,12 +330,23 @@ function computeBlastRadius(graph, changedFiles, options = {}) {
   const to_build = [...affectedServices];
   const to_deploy = [...affectedServices];
 
-  // Metrics (computed strictly over application services)
+  // Metrics (computed strictly over application services: (total - tested) * 2.5)
   const totalServices = applicationServices.length;
   const affectedCount = affectedServices.length;
   const skippedCount = skippedServices.length;
-  const pctSkipped = totalServices > 0 ? Math.round((skippedCount / totalServices) * 100) : 0;
-  const estimatedTimeSavedMinutes = skippedCount * ESTIMATED_MINUTES_PER_SERVICE;
+
+  let pctSkipped = null;
+  let estimatedTimeSavedMinutes = 0;
+
+  if (affectedCount === 0 && !full_rebuild) {
+    // Zero-affected case (no testable changes): no tests ran, savings is 0 and percent is null (rendered N/A)
+    pctSkipped = null;
+    estimatedTimeSavedMinutes = 0;
+  } else {
+    estimatedTimeSavedMinutes = (totalServices - affectedCount) * ESTIMATED_MINUTES_PER_SERVICE;
+    pctSkipped = totalServices > 0 ? Math.round(((totalServices - affectedCount) / totalServices) * 100) : 0;
+  }
+
   const estimatedTotalTimeMinutes = totalServices * ESTIMATED_MINUTES_PER_SERVICE;
   const estimatedActualTimeMinutes = affectedCount * ESTIMATED_MINUTES_PER_SERVICE;
 
@@ -462,7 +473,8 @@ function run() {
   console.log(`  Directly Changed:          ${result.changedServices.join(', ') || 'None'}`);
   console.log(`  Affected (Must Test):      ${result.affectedServices.join(', ') || 'None'}`);
   console.log(`  Skipped (Safe to Skip):    ${result.skippedServices.join(', ') || 'None'}`);
-  console.log(`  CI Time Saved:             ~${result.metrics.percentSaved}% (~${result.metrics.estimatedTimeSavedMinutes} minutes saved)`);
+  const pctSavedText = result.metrics.percentSaved !== null ? `~${result.metrics.percentSaved}%` : 'N/A (no tests required)';
+  console.log(`  CI Time Saved:             ${pctSavedText} (~${result.metrics.estimatedTimeSavedMinutes} minutes saved)`);
   console.log('======================================================');
 
   if (result.affectedServices.length > 0) {

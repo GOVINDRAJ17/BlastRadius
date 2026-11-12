@@ -343,7 +343,12 @@ In adherence to the **Real Data Only** constraint, every card and value on the d
 | **`UNAVAILABLE`** | Live backend or container metrics are unreachable or offline. No fabricated numbers are displayed. |
 
 ### Savings Formula
-$$\text{Time Saved (minutes)} = (\text{Total Services} - \text{Tested Services}) \times 2.5\text{ minutes}$$
+When application services are affected:
+$$\text{Time Saved (minutes)} = (\text{Total Application Services [5]} - \text{Tested Services}) \times 2.5\text{ minutes}$$
+$$\text{Percent Saved} = \frac{\text{Total Application Services [5]} - \text{Tested Services}}{\text{Total Application Services [5]}} \times 100\%$$
+
+When no application services are affected (zero-change or non-runtime changes):
+$$\text{Time Saved} = 0\text{ minutes}, \quad \text{Percent Saved} = \text{N/A (no tests required)}$$
 
 ---
 

@@ -205,7 +205,7 @@
         <div>🛡️ <strong>Skipped:</strong> <code id="scope-skipped">None</code></div>
       </div>
       <div class="formula-box">
-        CI Compute Savings Formula: <strong>Time Saved = (Skipped Services Count) × 2.5 minutes</strong> | Full Rebuild Fallback: <span id="scope-full-rebuild">false</span> (<span id="scope-rebuild-reason">None</span>)
+        CI Compute Savings Formula: <strong>Time Saved = (Total Application Services [5] − Tested Services) × 2.5 min</strong> (when affected &gt; 0; 0 min / N/A when affected = 0) | Full Rebuild Fallback: <span id="scope-full-rebuild">false</span> (<span id="scope-rebuild-reason">None</span>)
       </div>
     </section>
 
