@@ -25,6 +25,22 @@ const SCENARIOS = {
   current: null, // Will load from blast-radius.json
   auth_only: {
     name: "Scenario: 'auth' Changed",
+    changed_files: ["services/auth/index.js"],
+    changed_services: ["auth"],
+    changed_infrastructure: [],
+    directly_affected: ["auth"],
+    transitively_affected: ["notifications", "payments"],
+    tested: ["auth", "notifications", "payments"],
+    to_build: ["auth", "notifications", "payments"],
+    to_deploy: ["auth", "notifications", "payments"],
+    skipped: ["search", "shared"],
+    full_rebuild: false,
+    full_rebuild_reason: null,
+    causal_paths: {
+      auth: ["auth"],
+      payments: ["auth", "payments"],
+      notifications: ["auth", "payments", "notifications"]
+    },
     changedServices: ["auth"],
     affectedServices: ["auth", "notifications", "payments"],
     skippedServices: ["search", "shared"],
@@ -43,6 +59,20 @@ const SCENARIOS = {
   },
   search_only: {
     name: "Scenario: 'search' Changed",
+    changed_files: ["services/search/index.js"],
+    changed_services: ["search"],
+    changed_infrastructure: [],
+    directly_affected: ["search"],
+    transitively_affected: [],
+    tested: ["search"],
+    to_build: ["search"],
+    to_deploy: ["search"],
+    skipped: ["auth", "notifications", "payments", "shared"],
+    full_rebuild: false,
+    full_rebuild_reason: null,
+    causal_paths: {
+      search: ["search"]
+    },
     changedServices: ["search"],
     affectedServices: ["search"],
     skippedServices: ["auth", "notifications", "payments", "shared"],
@@ -59,6 +89,24 @@ const SCENARIOS = {
   },
   shared_only: {
     name: "Scenario: 'shared' Changed",
+    changed_files: ["services/shared/index.js"],
+    changed_services: ["shared"],
+    changed_infrastructure: [],
+    directly_affected: ["shared"],
+    transitively_affected: ["auth", "notifications", "payments", "search"],
+    tested: ["auth", "notifications", "payments", "search", "shared"],
+    to_build: ["auth", "notifications", "payments", "search", "shared"],
+    to_deploy: ["auth", "notifications", "payments", "search", "shared"],
+    skipped: [],
+    full_rebuild: true,
+    full_rebuild_reason: "Shared core utility package was modified (full rebuild fallback)",
+    causal_paths: {
+      shared: ["shared"],
+      auth: ["shared", "auth"],
+      payments: ["shared", "payments"],
+      notifications: ["shared", "notifications"],
+      search: ["shared", "search"]
+    },
     changedServices: ["shared"],
     affectedServices: ["auth", "notifications", "payments", "search", "shared"],
     skippedServices: [],
@@ -79,6 +127,20 @@ const SCENARIOS = {
   },
   notifications_only: {
     name: "Scenario: 'notifications' Changed",
+    changed_files: ["services/notifications/index.js"],
+    changed_services: ["notifications"],
+    changed_infrastructure: [],
+    directly_affected: ["notifications"],
+    transitively_affected: [],
+    tested: ["notifications"],
+    to_build: ["notifications"],
+    to_deploy: ["notifications"],
+    skipped: ["auth", "payments", "search", "shared"],
+    full_rebuild: false,
+    full_rebuild_reason: null,
+    causal_paths: {
+      notifications: ["notifications"]
+    },
     changedServices: ["notifications"],
     affectedServices: ["notifications"],
     skippedServices: ["auth", "payments", "search", "shared"],
@@ -94,6 +156,42 @@ const SCENARIOS = {
     }
   }
 };
+
+/**
+ * Non-runtime repository & VCS configuration files.
+ * These files do not alter service binaries, test code, or container runtimes,
+ * and must be excluded from "Directly Changed" counts and the CI status bar.
+ */
+const NON_RUNTIME_PATTERNS = new Set([
+  'README.md',
+  '.env.example',
+  '.gitignore',
+  '.gitattributes'
+]);
+
+/**
+ * Unified CI compute savings formula.
+ * Standard definition: saved = (5 - tested) * 2.5 min when affected > 0, otherwise 0 min / N/A.
+ */
+function computeSavings(testedCount, totalServices = 5) {
+  if (testedCount === 0) {
+    return {
+      minutes: 0,
+      percent: null,
+      pctText: 'N/A',
+      minsText: '0.0 mins (no tests required)'
+    };
+  }
+  const savedCount = Math.max(0, totalServices - testedCount);
+  const minutes = Number((savedCount * 2.5).toFixed(1));
+  const percent = Math.round((savedCount / totalServices) * 100);
+  return {
+    minutes,
+    percent,
+    pctText: `~${percent}%`,
+    minsText: `~${minutes.toFixed(1)} mins saved this run`
+  };
+}
 
 const DOCKER_TEST_LOGS = {
   auth: {
@@ -451,23 +549,24 @@ function renderScopeContract() {
   const isSimulated = blast !== SCENARIOS.current;
   const scope = (isSimulated ? null : currentScopeData) || blast;
 
-  const directlyChanged = blast.changedServices || scope.changed_services || [];
-  const directlyAffected = scope.directly_affected || directlyChanged;
-  const transitivelyAffected = scope.transitively_affected || (blast.affectedServices || []).filter(s => !directlyChanged.includes(s));
-  const tested = scope.tested || blast.affectedServices || [];
-  const toBuild = scope.to_build || tested;
-  const toDeploy = scope.to_deploy || tested;
-  const skipped = scope.skipped || blast.skippedServices || [];
+  // Application services only — strictly exclude cluster infrastructure ('api')
+  const directlyChanged = (scope.changed_services || blast.changedServices || []).filter(s => s !== 'api');
+  const directlyAffected = (scope.directly_affected || directlyChanged).filter(s => s !== 'api');
+  const transitivelyAffected = (scope.transitively_affected || (blast.affectedServices || []).filter(s => !directlyChanged.includes(s))).filter(s => s !== 'api');
+  const tested = (scope.tested || blast.affectedServices || []).filter(s => s !== 'api');
+  const toBuild = (scope.to_build || tested).filter(s => s !== 'api');
+  const toDeploy = (scope.to_deploy || tested).filter(s => s !== 'api');
+  const skipped = (scope.skipped || blast.skippedServices || []).filter(s => s !== 'api');
   const fullRebuild = scope.full_rebuild ?? (blast.metrics?.percentSaved === 0 && blast.affectedServices?.length === 5);
   const rebuildReason = scope.full_rebuild_reason || (fullRebuild ? 'Core shared package or root manifest modified' : 'None');
 
   const badgeContract = document.getElementById('badge-contract-source');
   if (badgeContract) {
     if (isSimulated) {
-      badgeContract.textContent = 'SIMULATED';
-      badgeContract.className = 'source-pill simulated';
+      badgeContract.textContent = 'SEEDED';
+      badgeContract.className = 'source-pill seeded';
     } else {
-      badgeContract.textContent = 'CONTRACT / LAST-RUN';
+      badgeContract.textContent = 'LAST RUN';
       badgeContract.className = 'source-pill last-run';
     }
   }
@@ -1104,22 +1203,32 @@ function fitGraph() {
 
 function renderStats() {
   const blast = currentBlastRadius || SCENARIOS.auth_only;
-  const metrics = blast.metrics || {};
   const isSimulated = blast !== SCENARIOS.current;
 
-  document.getElementById('stat-total').textContent = blast.totalServices || 5;
-  document.getElementById('stat-changed').textContent = blast.changedServices?.length || 0;
-  document.getElementById('stat-affected').textContent = blast.affectedServices?.length || 0;
-  document.getElementById('stat-skipped').textContent = blast.skippedServices?.length || 0;
-  const pctSavedText = metrics.percentSaved !== null && metrics.percentSaved !== undefined
-    ? `~${metrics.percentSaved}%`
-    : 'N/A';
-  const minsSavedText = metrics.percentSaved !== null && metrics.percentSaved !== undefined
-    ? `~${metrics.estimatedTimeSavedMinutes || 0} mins saved this run`
-    : '0.0 mins (no tests required)';
+  // Filter out non-runtime repository & VCS configuration files
+  const rawChangedFiles = blast.changedFiles || blast.changed_files || [];
+  const runtimeFiles = rawChangedFiles.filter(f => {
+    const base = f.split('/').pop().split('\\').pop();
+    return !NON_RUNTIME_PATTERNS.has(base) && !NON_RUNTIME_PATTERNS.has(f);
+  });
 
-  document.getElementById('stat-saved').textContent = pctSavedText;
-  document.getElementById('stat-saved-mins').textContent = minsSavedText;
+  const rawChanged = blast.changedServices || blast.changed_services || [];
+  const changedServices = rawChanged.filter(s => s !== 'api');
+  const rawAffected = blast.affectedServices || blast.tested || [];
+  const affectedServices = rawAffected.filter(s => s !== 'api');
+  const rawSkipped = blast.skippedServices || blast.skipped || [];
+  const skippedServices = rawSkipped.filter(s => s !== 'api');
+
+  const totalAppServices = 5;
+  const testedCount = affectedServices.length;
+  const savings = computeSavings(testedCount, totalAppServices);
+
+  document.getElementById('stat-total').textContent = totalAppServices;
+  document.getElementById('stat-changed').textContent = changedServices.length;
+  document.getElementById('stat-affected').textContent = testedCount;
+  document.getElementById('stat-skipped').textContent = skippedServices.length;
+  document.getElementById('stat-saved').textContent = savings.pctText;
+  document.getElementById('stat-saved-mins').textContent = savings.minsText;
 
   // Update Continuous Integration Banner
   const statusEl = document.getElementById('ci-status-text');
@@ -1129,11 +1238,11 @@ function renderStats() {
 
   if (statusEl) {
     if (isSimulated) {
-      statusEl.textContent = `[SIMULATED FIXTURE] ${blast.name || 'Demo Scenario'}`;
+      statusEl.textContent = `[SEEDED FIXTURE] ${blast.name || 'Demo Scenario'}`;
     } else {
-      const changed = (blast.changedServices || []).join(', ') || 'None';
-      const changedFiles = (blast.changedFiles || []).map(f => f.split('/').pop()).join(', ');
-      statusEl.textContent = `Analyzed change: [${changed}] ${changedFiles ? `via ${changedFiles}` : ''}`;
+      const changedDesc = changedServices.length > 0 ? changedServices.join(', ') : 'None';
+      const fileNames = runtimeFiles.map(f => f.split('/').pop().split('\\').pop()).join(', ');
+      statusEl.textContent = `Analyzed change: [${changedDesc}] ${fileNames ? `via ${fileNames}` : '(no runtime changes)'}`;
     }
   }
   if (branchEl) {
@@ -1242,7 +1351,6 @@ function selectService(svcName) {
 
 function switchLogTab(svcName) {
   const logData = DOCKER_TEST_LOGS[svcName];
-  if (!logData) return;
 
   // Update tabs active state
   const tabs = document.querySelectorAll('#log-tabs .tab-btn');
@@ -1258,13 +1366,20 @@ function switchLogTab(svcName) {
   const badgeEl = document.getElementById('terminal-badge');
   const outputEl = document.getElementById('terminal-output');
 
-  if (titleEl) titleEl.textContent = logData.command;
-  if (badgeEl) badgeEl.textContent = logData.badge;
-  if (outputEl) outputEl.textContent = logData.log;
+  if (logData) {
+    if (titleEl) titleEl.textContent = logData.command;
+    if (badgeEl) badgeEl.textContent = `${logData.badge} [SEEDED]`;
+    if (outputEl) outputEl.textContent = logData.log;
+  } else {
+    if (titleEl) titleEl.textContent = `docker run --rm blastradius-${svcName}:latest`;
+    if (badgeEl) badgeEl.textContent = 'NO CAPTURE';
+    if (outputEl) outputEl.textContent = 'No run output captured for this run.';
+  }
 }
 
 function renderHistory() {
   const tbody = document.getElementById('history-table-body');
+  const isFromApi = Boolean(historyData?.source === 'redis-cache' || historyData?.source === 'local-file');
   const runs = historyData?.runs || [
     {
       prNumber: 104,
@@ -1272,8 +1387,8 @@ function renderHistory() {
       commitSha: '1a9f0e2',
       changedServices: ['notifications'],
       affectedServices: ['notifications'],
-      percentSaved: 80,
-      timeSavedMinutes: 10.0
+      tested: ['notifications'],
+      source: 'SEEDED'
     },
     {
       prNumber: 103,
@@ -1281,8 +1396,8 @@ function renderHistory() {
       commitSha: '7e1d5a8',
       changedServices: ['payments'],
       affectedServices: ['notifications', 'payments'],
-      percentSaved: 60,
-      timeSavedMinutes: 7.5
+      tested: ['notifications', 'payments'],
+      source: 'SEEDED'
     },
     {
       prNumber: 102,
@@ -1290,8 +1405,8 @@ function renderHistory() {
       commitSha: '3c8e4d1',
       changedServices: ['auth'],
       affectedServices: ['auth', 'notifications', 'payments'],
-      percentSaved: 40,
-      timeSavedMinutes: 5.0
+      tested: ['auth', 'notifications', 'payments'],
+      source: 'SEEDED'
     },
     {
       prNumber: 101,
@@ -1299,27 +1414,46 @@ function renderHistory() {
       commitSha: '9f2a1b4',
       changedServices: ['search'],
       affectedServices: ['search'],
-      percentSaved: 80,
-      timeSavedMinutes: 10.0
+      tested: ['search'],
+      source: 'SEEDED'
     }
   ];
 
-  tbody.innerHTML = runs.map(r => `
-    <tr>
-      <td><span class="commit-tag">#${r.prNumber || 'push'}</span></td>
-      <td><code>${r.branch || 'main'}</code></td>
-      <td><span class="commit-tag">${r.commitSha || 'local'}</span></td>
-      <td><code>${(r.changedServices || []).join(', ') || 'none'}</code></td>
-      <td><strong style="color:#fbbf24;">${(r.affectedServices || []).length}</strong></td>
-      <td><strong style="color:#38bdf8;">${(r.skippedServices || []).length || (5 - (r.affectedServices || []).length)}</strong></td>
-      <td><span style="color:#10b981;font-weight:bold;">${r.percentSaved}%</span></td>
-      <td><strong>+${r.timeSavedMinutes}m</strong></td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = runs.map(r => {
+    const rawTested = r.tested || r.affectedServices || [];
+    const appTested = rawTested.filter(s => s !== 'api');
+    const testedCount = appTested.length;
+    const skippedCount = Math.max(0, 5 - testedCount);
+    const savings = computeSavings(testedCount, 5);
+    const rowSource = r.source || (isFromApi ? 'LIVE' : 'SEEDED');
+    const pillClass = rowSource === 'LIVE' ? 'live' : 'seeded';
 
-  const cumulativeMinutes = historyData?.summary?.cumulativeMinutesSaved ||
-    runs.reduce((acc, curr) => acc + (curr.timeSavedMinutes || 0), 0);
-  document.getElementById('cumulative-saved-text').textContent = `Total Cumulative Savings: ~${cumulativeMinutes.toFixed(1)} CI minutes saved across ${runs.length} runs`;
+    return `
+      <tr>
+        <td><span class="source-pill ${pillClass}">${rowSource}</span></td>
+        <td><span class="commit-tag">#${r.prNumber || 'push'}</span></td>
+        <td><code>${r.branch || 'main'}</code></td>
+        <td><span class="commit-tag">${r.commitSha || 'local'}</span></td>
+        <td><code>${(r.changedServices || []).filter(s => s !== 'api').join(', ') || 'none'}</code></td>
+        <td><strong style="color:#fbbf24;">${testedCount}</strong></td>
+        <td><strong style="color:#38bdf8;">${skippedCount}</strong></td>
+        <td><span style="color:#10b981;font-weight:bold;">${savings.pctText}</span></td>
+        <td><strong>+${savings.minutes.toFixed(1)}m</strong></td>
+      </tr>
+    `;
+  }).join('');
+
+  // The cumulative total MUST be computed strictly from the rows shown
+  const cumulativeMinutes = runs.reduce((acc, r) => {
+    const rawTested = r.tested || r.affectedServices || [];
+    const appTested = rawTested.filter(s => s !== 'api');
+    return acc + computeSavings(appTested.length, 5).minutes;
+  }, 0);
+
+  const cumEl = document.getElementById('cumulative-saved-text');
+  if (cumEl) {
+    cumEl.textContent = `Total Cumulative Savings: ~${cumulativeMinutes.toFixed(1)} CI minutes saved across ${runs.length} runs`;
+  }
 }
 
 function initUI() {

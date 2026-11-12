@@ -340,8 +340,9 @@
     <!-- Docker CI Test Execution Logs Section -->
     <section class="test-logs-section">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-        <div class="panel-title">
+        <div class="panel-title" style="display: flex; align-items: center; gap: 0.5rem;">
           <span>🐳</span> Isolated Docker Test Execution Logs (Native Matrix Simulation)
+          <span class="source-pill seeded" id="badge-docker-logs">SEEDED</span>
         </div>
         <div class="log-service-tabs" id="log-tabs">
           <button class="tab-btn active" onclick="switchLogTab('auth')">auth (4/4 passed)</button>
@@ -380,6 +381,7 @@
         <table class="history-table">
           <thead>
             <tr>
+              <th>Source</th>
               <th>Run / PR</th>
               <th>Branch</th>
               <th>Commit</th>

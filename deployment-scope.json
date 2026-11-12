@@ -1,6 +1,6 @@
 {
-  "commit_sha": "d2692e220978ffc63bc911041ac9e0991ce160ca",
-  "base_ref": "HEAD",
+  "commit_sha": "42a7eb5c5baf3b2a13a96b8ec0397f672d22019c",
+  "base_ref": "HEAD~1",
   "changed_files": [
     ".env.example",
     "README.md",
@@ -8,9 +8,9 @@
     "dashboard/index.html",
     "docker-compose.yml",
     "infrastructure/prometheus/prometheus.yml",
+    "services/api/containers.js",
     "services/api/index.js",
-    "services/api/test/index.test.js",
-    "services/api/containers.js"
+    "services/api/test/index.test.js"
   ],
   "changed_services": [],
   "directly_affected": [],

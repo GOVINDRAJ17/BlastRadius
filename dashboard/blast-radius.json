@@ -1,6 +1,6 @@
 {
-  "commit_sha": "d2692e220978ffc63bc911041ac9e0991ce160ca",
-  "base_ref": "HEAD",
+  "commit_sha": "42a7eb5c5baf3b2a13a96b8ec0397f672d22019c",
+  "base_ref": "HEAD~1",
   "changed_files": [
     ".env.example",
     "README.md",
@@ -8,9 +8,9 @@
     "dashboard/index.html",
     "docker-compose.yml",
     "infrastructure/prometheus/prometheus.yml",
+    "services/api/containers.js",
     "services/api/index.js",
-    "services/api/test/index.test.js",
-    "services/api/containers.js"
+    "services/api/test/index.test.js"
   ],
   "changed_services": [],
   "changed_infrastructure": [
@@ -70,10 +70,10 @@
       "shared"
     ]
   },
-  "timestamp": "2026-11-12T18:44:35.358Z",
-  "commitSha": "d2692e2",
+  "timestamp": "2026-11-12T19:01:56.509Z",
+  "commitSha": "42a7eb5",
   "branch": "master",
-  "commitMessage": "fix(dashboard): compute replica traffic distribution from live API counters (5.c)",
+  "commitMessage": "feat(metrics): wire real container metrics from cAdvisor and Docker socket into dashboard",
   "totalServices": 5,
   "changedServices": [],
   "affectedServices": [
@@ -91,15 +91,15 @@
     "dashboard/index.html",
     "docker-compose.yml",
     "infrastructure/prometheus/prometheus.yml",
+    "services/api/containers.js",
     "services/api/index.js",
-    "services/api/test/index.test.js",
-    "services/api/containers.js"
+    "services/api/test/index.test.js"
   ],
   "fileDetailsByService": {
     "api": [
+      "services/api/containers.js",
       "services/api/index.js",
-      "services/api/test/index.test.js",
-      "services/api/containers.js"
+      "services/api/test/index.test.js"
     ]
   },
   "globalFiles": [
