@@ -212,7 +212,7 @@ Rather than running generic anonymous scaling (`docker compose up --scale api=3`
 | `GET` | `/metrics` | Public | Prometheus text metrics (`prom-client`) | `http_requests_total{instance="api-1"} 42` |
 | `GET` | `/api/runs` | Public | Recent CI runs list (cache-first via Redis) | `{"source":"redis","runs":[...]}` |
 | `GET` | `/api/runs/:id` | Public | Single run details with scope contract | `{"id":"104","scope":{...}}` |
-| `GET` | `/api/infra/status`| Public | Replica heartbeats and container health | `{"active_replicas":3,"replicas":[...]}` |
+| `GET` | `/api/infra/status`| Public | Replica heartbeats, container health, and traffic distribution | `{"active_replicas":3,"traffic":{...},"replicas":[...]}` |
 | `GET` | `/api/deployments`| Public | Deployment history | `{"deployments":[...]}` |
 | `POST`| `/api/reports` | Bearer | Authenticated ingestion of CI reports | `{"status":"ingested","id":"run-..."}` |
 

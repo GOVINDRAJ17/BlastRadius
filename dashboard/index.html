@@ -144,16 +144,23 @@
           <span id="lb-fails-text">Passive Fails: 0</span>
         </div>
         <div>
-          <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.2rem;">Replica Traffic Distribution:</div>
-          <div class="dist-bar-container">
-            <div class="dist-bar-segment api-1" id="dist-api-1" style="width: 33.3%;" title="api-1"></div>
-            <div class="dist-bar-segment api-2" id="dist-api-2" style="width: 33.3%;" title="api-2"></div>
-            <div class="dist-bar-segment api-3" id="dist-api-3" style="width: 33.3%;" title="api-3"></div>
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.2rem;">
+            Replica Traffic Distribution: <span id="lb-source-label" style="color: #64748b; font-size: 0.7rem;">(source: live counter)</span>
           </div>
-          <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #64748b; margin-top: 0.2rem;">
-            <span id="tally-api-1">api-1: ~33%</span>
-            <span id="tally-api-2">api-2: ~33%</span>
-            <span id="tally-api-3">api-3: ~33%</span>
+          <div id="traffic-distribution-container">
+            <div class="dist-bar-container" id="dist-bar-container" style="display: none;">
+              <div class="dist-bar-segment api-1" id="dist-api-1" style="width: 0%;" title="api-1"></div>
+              <div class="dist-bar-segment api-2" id="dist-api-2" style="width: 0%;" title="api-2"></div>
+              <div class="dist-bar-segment api-3" id="dist-api-3" style="width: 0%;" title="api-3"></div>
+            </div>
+            <div id="traffic-distribution-tallies" style="display: none; justify-content: space-between; font-size: 0.72rem; color: #64748b; margin-top: 0.2rem;">
+              <span id="tally-api-1">api-1: 0</span>
+              <span id="tally-api-2">api-2: 0</span>
+              <span id="tally-api-3">api-3: 0</span>
+            </div>
+            <div id="traffic-distribution-unavailable" style="font-size: 0.75rem; color: #f87171; margin-top: 0.25rem;">
+              Traffic Distribution: unavailable (start docker compose)
+            </div>
           </div>
         </div>
       </div>

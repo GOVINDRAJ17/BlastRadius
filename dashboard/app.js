@@ -524,6 +524,56 @@ async function loadInfraStatus() {
           el.className = `replica-badge ${rep.status === 'healthy' ? 'healthy' : 'unhealthy'}`;
         }
       });
+
+      // Update replica traffic distribution from live measurements
+      const barContainer = document.getElementById('dist-bar-container');
+      const talliesContainer = document.getElementById('traffic-distribution-tallies');
+      const unavailEl = document.getElementById('traffic-distribution-unavailable');
+      const sourceLabel = document.getElementById('lb-source-label');
+
+      if (data.traffic) {
+        if (sourceLabel) {
+          sourceLabel.textContent = `(source: ${data.traffic.source || 'live counter'}, routes: ${data.traffic.counted_routes || '/api/*'})`;
+        }
+
+        const total = data.traffic.total || 0;
+        const counts = data.traffic.counts || {};
+
+        if (total === 0) {
+          if (barContainer) barContainer.style.display = 'flex';
+          if (talliesContainer) talliesContainer.style.display = 'flex';
+          if (unavailEl) {
+            unavailEl.style.display = 'block';
+            unavailEl.style.color = '#94a3b8';
+            unavailEl.textContent = 'no traffic yet (send requests to /api/*)';
+          }
+          ['api-1', 'api-2', 'api-3'].forEach(rep => {
+            const bar = document.getElementById(`dist-${rep}`);
+            const tally = document.getElementById(`tally-${rep}`);
+            if (bar) bar.style.width = '0%';
+            if (tally) tally.textContent = `${rep}: 0 (0%)`;
+          });
+        } else {
+          if (barContainer) barContainer.style.display = 'flex';
+          if (talliesContainer) talliesContainer.style.display = 'flex';
+          if (unavailEl) unavailEl.style.display = 'none';
+
+          ['api-1', 'api-2', 'api-3'].forEach(rep => {
+            const count = counts[rep] || 0;
+            const pct = Math.round((count / total) * 100);
+            const bar = document.getElementById(`dist-${rep}`);
+            const tally = document.getElementById(`tally-${rep}`);
+            if (bar) {
+              bar.style.width = `${pct}%`;
+              bar.title = `${rep}: ${count} (${pct}%)`;
+            }
+            if (tally) {
+              tally.textContent = `${rep}: ${count} (${pct}%)`;
+            }
+          });
+        }
+      }
+
       return;
     }
   } catch {}
@@ -535,6 +585,17 @@ async function loadInfraStatus() {
   }
   if (countEl) countEl.textContent = '0/3 active (start docker compose)';
   if (redisEl) redisEl.textContent = 'Redis Cache: start docker compose up -d';
+
+  const barContainer = document.getElementById('dist-bar-container');
+  const talliesContainer = document.getElementById('traffic-distribution-tallies');
+  const unavailEl = document.getElementById('traffic-distribution-unavailable');
+  if (barContainer) barContainer.style.display = 'none';
+  if (talliesContainer) talliesContainer.style.display = 'none';
+  if (unavailEl) {
+    unavailEl.style.display = 'block';
+    unavailEl.style.color = '#f87171';
+    unavailEl.textContent = 'Traffic Distribution: unavailable (start docker compose)';
+  }
 }
 
 function getNodeColor(svcName, blast) {

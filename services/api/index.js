@@ -132,6 +132,11 @@ app.use((req, res, next) => {
 
     httpRequestsTotal.inc({ method: req.method, route, status, instance: INSTANCE_ID });
     httpRequestDurationSeconds.observe({ method: req.method, route, status, instance: INSTANCE_ID }, duration);
+
+    // Track real /api/* traffic counts per replica in Redis (excludes internal /health and /metrics probes)
+    if (req.path.startsWith('/api/') && isRedisConnected) {
+      redis.hincrby('blastradius:traffic:api_routes', INSTANCE_ID, 1).catch(() => {});
+    }
   });
 
   next();
@@ -383,6 +388,29 @@ app.get('/api/infra/status', async (req, res) => {
 
   const activeCount = replicaStatus.filter(r => r.status === 'healthy').length;
 
+  const traffic = {
+    source: isRedisConnected ? 'redis-counter' : 'local-counter',
+    counted_routes: '/api/*',
+    counts: { 'api-1': 0, 'api-2': 0, 'api-3': 0 },
+    total: 0,
+    timestamp: new Date().toISOString()
+  };
+
+  if (isRedisConnected) {
+    try {
+      const rawCounts = await redis.hgetall('blastradius:traffic:api_routes');
+      if (rawCounts) {
+        let total = 0;
+        for (const repId of knownReplicas) {
+          const count = parseInt(rawCounts[repId] || '0', 10);
+          traffic.counts[repId] = count;
+          total += count;
+        }
+        traffic.total = total;
+      }
+    } catch {}
+  }
+
   res.status(200).json({
     status: 'ok',
     instance_id: INSTANCE_ID,
@@ -390,6 +418,7 @@ app.get('/api/infra/status', async (req, res) => {
     replicas: replicaStatus,
     active_replicas: activeCount,
     total_replicas: knownReplicas.length,
+    traffic,
     timestamp: new Date().toISOString()
   });
 });
