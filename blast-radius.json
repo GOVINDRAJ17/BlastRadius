@@ -1,55 +1,150 @@
 {
-  "commit_sha": "b38941de23d7b6ab1aeb0e9c3a01e16127eaf5d7",
-  "base_ref": null,
+  "commit_sha": "d2692e220978ffc63bc911041ac9e0991ce160ca",
+  "base_ref": "HEAD",
   "changed_files": [
-    "README.md"
+    ".env.example",
+    "README.md",
+    "dashboard/app.js",
+    "dashboard/index.html",
+    "docker-compose.yml",
+    "infrastructure/prometheus/prometheus.yml",
+    "services/api/index.js",
+    "services/api/test/index.test.js",
+    "services/api/containers.js"
   ],
   "changed_services": [],
-  "changed_infrastructure": [],
+  "changed_infrastructure": [
+    "api"
+  ],
   "directly_affected": [],
-  "transitively_affected": [],
-  "tested": [],
-  "to_build": [],
-  "to_deploy": [],
-  "skipped": [
+  "transitively_affected": [
     "auth",
     "notifications",
     "payments",
     "search",
     "shared"
   ],
-  "full_rebuild": false,
-  "full_rebuild_reason": null,
-  "causal_paths": {},
-  "timestamp": "2026-11-12T18:14:34.408Z",
-  "commitSha": "b38941d",
+  "tested": [
+    "auth",
+    "notifications",
+    "payments",
+    "search",
+    "shared"
+  ],
+  "to_build": [
+    "auth",
+    "notifications",
+    "payments",
+    "search",
+    "shared"
+  ],
+  "to_deploy": [
+    "auth",
+    "notifications",
+    "payments",
+    "search",
+    "shared"
+  ],
+  "skipped": [],
+  "full_rebuild": true,
+  "full_rebuild_reason": "Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
+  "causal_paths": {
+    "auth": [
+      "root",
+      "auth"
+    ],
+    "notifications": [
+      "root",
+      "notifications"
+    ],
+    "payments": [
+      "root",
+      "payments"
+    ],
+    "search": [
+      "root",
+      "search"
+    ],
+    "shared": [
+      "root",
+      "shared"
+    ]
+  },
+  "timestamp": "2026-11-12T18:44:35.358Z",
+  "commitSha": "d2692e2",
   "branch": "master",
-  "commitMessage": "fix(scope): trigger full rebuild on root runtime config changes (5.a)",
+  "commitMessage": "fix(dashboard): compute replica traffic distribution from live API counters (5.c)",
   "totalServices": 5,
   "changedServices": [],
-  "affectedServices": [],
-  "skippedServices": [
+  "affectedServices": [
     "auth",
     "notifications",
     "payments",
     "search",
     "shared"
   ],
+  "skippedServices": [],
   "changedFiles": [
-    "README.md"
+    ".env.example",
+    "README.md",
+    "dashboard/app.js",
+    "dashboard/index.html",
+    "docker-compose.yml",
+    "infrastructure/prometheus/prometheus.yml",
+    "services/api/index.js",
+    "services/api/test/index.test.js",
+    "services/api/containers.js"
   ],
-  "fileDetailsByService": {},
+  "fileDetailsByService": {
+    "api": [
+      "services/api/index.js",
+      "services/api/test/index.test.js",
+      "services/api/containers.js"
+    ]
+  },
   "globalFiles": [
-    "README.md"
+    ".env.example",
+    "README.md",
+    "dashboard/app.js",
+    "dashboard/index.html",
+    "docker-compose.yml",
+    "infrastructure/prometheus/prometheus.yml"
   ],
-  "explanations": {},
-  "impactPaths": {},
+  "explanations": {
+    "auth": "Included in full rebuild: Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
+    "notifications": "Included in full rebuild: Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
+    "payments": "Included in full rebuild: Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
+    "search": "Included in full rebuild: Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
+    "shared": "Included in full rebuild: Root runtime configuration modified: docker-compose.yml (full rebuild fallback)"
+  },
+  "impactPaths": {
+    "auth": [
+      "root",
+      "auth"
+    ],
+    "notifications": [
+      "root",
+      "notifications"
+    ],
+    "payments": [
+      "root",
+      "payments"
+    ],
+    "search": [
+      "root",
+      "search"
+    ],
+    "shared": [
+      "root",
+      "shared"
+    ]
+  },
   "metrics": {
-    "affectedCount": 0,
-    "skippedCount": 5,
-    "percentSaved": null,
+    "affectedCount": 5,
+    "skippedCount": 0,
+    "percentSaved": 0,
     "estimatedTimeSavedMinutes": 0,
-    "estimatedActualTimeMinutes": 0,
+    "estimatedActualTimeMinutes": 12.5,
     "estimatedTotalTimeMinutes": 12.5
   }
 }

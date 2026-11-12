@@ -13,6 +13,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { APPLICATION_SERVICES, validateScopeContract } = require('./validator.js');
+const { getContainersMetrics, normalizeCpuRate } = require('./containers.js');
 
 const app = express();
 const PORT = process.env.API_PORT || process.env.PORT || 4000;
@@ -424,6 +425,35 @@ app.get('/api/infra/status', async (req, res) => {
 });
 
 /**
+ * GET /api/containers
+ * Real container metrics (CPU, memory, health, restarts, uptime).
+ * Scraped from Docker Engine API via socket or Prometheus/cAdvisor.
+ */
+app.get('/api/containers', async (req, res) => {
+  const forceRefresh = req.query.refresh === 'true';
+  try {
+    const data = await getContainersMetrics({
+      redis,
+      isRedisConnected,
+      instanceId: INSTANCE_ID,
+      prometheusUrl: process.env.PROMETHEUS_URL || 'http://prometheus:9090',
+      dockerSocketPath: process.env.DOCKER_SOCKET_PATH || '/var/run/docker.sock',
+      forceRefresh
+    });
+    return res.status(200).json(data);
+  } catch (err) {
+    return res.status(200).json({
+      status: 'error',
+      source: 'unavailable',
+      instance_id: INSTANCE_ID,
+      error: err.message,
+      collected_at: new Date().toISOString(),
+      containers: []
+    });
+  }
+});
+
+/**
  * GET /api/deployments
  * Deployment history.
  */
@@ -561,6 +591,28 @@ app.post('/api/reports', reportsLimiter, async (req, res) => {
 if (require.main === module) {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 [${INSTANCE_ID}] BlastRadius API listening on http://0.0.0.0:${PORT}`);
+
+    // If Docker socket is available locally, periodically refresh container metrics in Redis
+    const socketPath = process.env.DOCKER_SOCKET_PATH || '/var/run/docker.sock';
+    if (fs.existsSync(socketPath)) {
+      getContainersMetrics({
+        redis,
+        isRedisConnected,
+        instanceId: INSTANCE_ID,
+        dockerSocketPath: socketPath,
+        forceRefresh: true
+      }).catch(() => {});
+
+      setInterval(() => {
+        getContainersMetrics({
+          redis,
+          isRedisConnected,
+          instanceId: INSTANCE_ID,
+          dockerSocketPath: socketPath,
+          forceRefresh: true
+        }).catch(() => {});
+      }, 5000);
+    }
   });
 }
 

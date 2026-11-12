@@ -27,6 +27,8 @@ services:
       dockerfile: services/api/Dockerfile
     container_name: blastradius-api-1
     restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - NODE_ENV=production
       - API_PORT=4000
@@ -35,6 +37,8 @@ services:
       - REDIS_PORT=6379
       - REPORT_API_SECRET=${REPORT_API_SECRET:-blastradius_report_secret_default_9f8e7d}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+      - PROMETHEUS_URL=${PROMETHEUS_URL:-http://prometheus:9090}
+      - DOCKER_SOCKET_ENABLED=${DOCKER_SOCKET_ENABLED:-true}
     depends_on:
       redis:
         condition: service_healthy
@@ -61,6 +65,8 @@ services:
       - REDIS_PORT=6379
       - REPORT_API_SECRET=${REPORT_API_SECRET:-blastradius_report_secret_default_9f8e7d}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+      - PROMETHEUS_URL=${PROMETHEUS_URL:-http://prometheus:9090}
+      - DOCKER_SOCKET_ENABLED=false
     depends_on:
       redis:
         condition: service_healthy
@@ -87,6 +93,8 @@ services:
       - REDIS_PORT=6379
       - REPORT_API_SECRET=${REPORT_API_SECRET:-blastradius_report_secret_default_9f8e7d}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+      - PROMETHEUS_URL=${PROMETHEUS_URL:-http://prometheus:9090}
+      - DOCKER_SOCKET_ENABLED=false
     depends_on:
       redis:
         condition: service_healthy
@@ -125,6 +133,28 @@ services:
       timeout: 3s
       retries: 5
       start_period: 3s
+
+  # ============================================================================
+  # CADVISOR CONTAINER METRICS
+  # ============================================================================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: blastradius-cadvisor
+    restart: unless-stopped
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    networks:
+      - blastradius_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/healthz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 
   # ============================================================================
   # PROMETHEUS TIME-SERIES MONITORING

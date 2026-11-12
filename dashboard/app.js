@@ -427,6 +427,7 @@ async function loadData() {
   renderServiceList();
   renderHistory();
   loadInfraStatus();
+  loadContainerMetrics();
 
   const activeSvc = currentBlastRadius?.changedServices?.[0] || currentBlastRadius?.affectedServices?.[0] || 'auth';
   selectService(activeSvc);
@@ -595,6 +596,225 @@ async function loadInfraStatus() {
     unavailEl.style.display = 'block';
     unavailEl.style.color = '#f87171';
     unavailEl.textContent = 'Traffic Distribution: unavailable (start docker compose)';
+  }
+}
+
+// ============================================================================
+// Real Container Metrics Handling (Phase 2 & Section 5)
+// ============================================================================
+let lastContainersData = null;
+
+function formatBytes(bytes) {
+  if (typeof bytes !== 'number' || isNaN(bytes) || bytes <= 0) return '0 MB';
+  const mb = bytes / (1024 * 1024);
+  return `${mb.toFixed(1)} MB`;
+}
+
+function updateSelectedContainerView() {
+  if (!lastContainersData || !lastContainersData.containers) return;
+
+  const select = document.getElementById('container-select');
+  const selectedSvc = select ? select.value : 'all';
+  const containers = lastContainersData.containers;
+
+  const cpuEl = document.getElementById('cadvisor-cpu');
+  const memEl = document.getElementById('cadvisor-mem');
+  const healthEl = document.getElementById('cadvisor-health');
+  const restartsEl = document.getElementById('cadvisor-restarts');
+  const reasonEl = document.getElementById('container-reason-text');
+
+  if (selectedSvc === 'all') {
+    let totalCpu = 0;
+    let totalMem = 0;
+    let totalRestarts = 0;
+    let healthyCount = 0;
+    let anyCpuValid = false;
+    let reasons = [];
+
+    containers.forEach(c => {
+      if (typeof c.cpu_percent === 'number') {
+        totalCpu += c.cpu_percent;
+        anyCpuValid = true;
+      } else if (c.cpu_percent_reason) {
+        reasons.push(`${c.service}: ${c.cpu_percent_reason}`);
+      }
+      if (typeof c.memory_bytes === 'number') totalMem += c.memory_bytes;
+      if (typeof c.restart_count === 'number') totalRestarts += c.restart_count;
+      if (c.health === 'healthy') healthyCount++;
+    });
+
+    if (cpuEl) {
+      if (anyCpuValid) {
+        cpuEl.textContent = `${totalCpu.toFixed(1)}%`;
+        cpuEl.title = `Total across ${containers.length} containers`;
+        cpuEl.style.color = '#f8fafc';
+      } else {
+        cpuEl.textContent = 'unavailable';
+        cpuEl.title = reasons[0] || 'unavailable';
+        cpuEl.style.color = '#94a3b8';
+      }
+    }
+
+    if (memEl) {
+      memEl.textContent = formatBytes(totalMem);
+      memEl.title = `Total memory across ${containers.length} containers`;
+      memEl.style.color = '#f8fafc';
+    }
+
+    if (healthEl) {
+      if (healthyCount === containers.length && containers.length > 0) {
+        healthEl.textContent = 'UP';
+        healthEl.style.color = '#34d399';
+        healthEl.title = `All ${containers.length} containers healthy`;
+      } else {
+        const unhealthy = containers
+          .filter(c => c.health !== 'healthy')
+          .map(c => `${c.service}: ${c.health || 'unhealthy'}`)
+          .join(', ');
+        healthEl.textContent = `${healthyCount}/${containers.length} UP`;
+        healthEl.style.color = '#f87171';
+        healthEl.title = `Unhealthy: ${unhealthy}`;
+      }
+    }
+
+    if (restartsEl) {
+      restartsEl.textContent = `${totalRestarts}`;
+      restartsEl.title = `Total restarts across all containers`;
+    }
+
+    if (reasonEl) {
+      if (reasons.length > 0 && !anyCpuValid) {
+        reasonEl.style.display = 'block';
+        reasonEl.textContent = reasons[0];
+      } else {
+        reasonEl.style.display = 'none';
+      }
+    }
+  } else {
+    const c = containers.find(item => item.service === selectedSvc);
+    if (!c) return;
+
+    if (cpuEl) {
+      if (typeof c.cpu_percent === 'number') {
+        cpuEl.textContent = `${c.cpu_percent.toFixed(2)}%`;
+        cpuEl.title = `Normalized CPU usage`;
+        cpuEl.style.color = '#f8fafc';
+      } else {
+        cpuEl.textContent = 'unavailable';
+        cpuEl.title = c.cpu_percent_reason || 'unavailable';
+        cpuEl.style.color = '#94a3b8';
+      }
+    }
+
+    if (memEl) {
+      if (typeof c.memory_bytes === 'number') {
+        memEl.textContent = formatBytes(c.memory_bytes);
+        memEl.title = `${c.memory_bytes} bytes`;
+        memEl.style.color = '#f8fafc';
+      } else {
+        memEl.textContent = 'unavailable';
+        memEl.title = c.memory_bytes_reason || 'unavailable';
+        memEl.style.color = '#94a3b8';
+      }
+    }
+
+    if (healthEl) {
+      if (c.health === 'healthy') {
+        healthEl.textContent = 'UP';
+        healthEl.style.color = '#34d399';
+        healthEl.title = 'healthy';
+      } else {
+        healthEl.textContent = (c.health || 'unhealthy').toUpperCase();
+        healthEl.style.color = '#f87171';
+        healthEl.title = c.health_reason || c.health || 'unhealthy';
+      }
+    }
+
+    if (restartsEl) {
+      if (typeof c.restart_count === 'number') {
+        restartsEl.textContent = `${c.restart_count}`;
+        restartsEl.title = `Container restarts`;
+      } else {
+        restartsEl.textContent = 'unavailable';
+        restartsEl.title = c.restart_count_reason || 'unavailable';
+      }
+    }
+
+    if (reasonEl) {
+      const reason = c.cpu_percent_reason || c.health_reason || c.uptime_seconds_reason;
+      if (reason && (c.cpu_percent === null || c.health !== 'healthy')) {
+        reasonEl.style.display = 'block';
+        reasonEl.textContent = reason;
+      } else {
+        reasonEl.style.display = 'none';
+      }
+    }
+  }
+
+  // Populate/update table
+  const tbody = document.getElementById('containers-table-body');
+  if (tbody) {
+    tbody.innerHTML = containers.map(c => {
+      const isUp = c.health === 'healthy';
+      const healthBadge = `<span style="color: ${isUp ? '#34d399' : '#f87171'}; font-weight: 600;">${isUp ? 'UP' : (c.health || 'unhealthy').toUpperCase()}</span>`;
+      const cpuVal = typeof c.cpu_percent === 'number' ? `${c.cpu_percent.toFixed(1)}%` : '<span style="color:#64748b;" title="' + (c.cpu_percent_reason || '') + '">unavail</span>';
+      const memVal = typeof c.memory_bytes === 'number' ? formatBytes(c.memory_bytes) : '<span style="color:#64748b;" title="' + (c.memory_bytes_reason || '') + '">unavail</span>';
+      const restartsVal = typeof c.restart_count === 'number' ? c.restart_count : '-';
+      return `<tr style="border-bottom: 1px solid #1e293b;">
+        <td style="padding: 2px 4px; font-weight: 500; color: #f1f5f9;">${c.service}</td>
+        <td style="padding: 2px 4px;">${healthBadge}</td>
+        <td style="padding: 2px 4px;">${cpuVal}</td>
+        <td style="padding: 2px 4px;">${memVal}</td>
+        <td style="padding: 2px 4px;">${restartsVal}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+async function loadContainerMetrics() {
+  const apiBase = getApiBaseUrl();
+  const badgeSource = document.getElementById('badge-cadvisor-source');
+  const statusText = document.getElementById('cadvisor-status-text');
+  const contentEl = document.getElementById('container-metrics-content');
+  const unavailEl = document.getElementById('container-metrics-unavailable');
+
+  try {
+    const res = await fetch(`${apiBase}/api/containers`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      lastContainersData = data;
+
+      if (badgeSource) {
+        const src = data.source || 'docker-api';
+        badgeSource.textContent = `source: ${src}`;
+        badgeSource.className = `source-pill ${src === 'unavailable' ? 'unavailable' : 'live'}`;
+      }
+
+      if (statusText) {
+        const count = (data.containers || []).length;
+        statusText.textContent = `${count} Compose Containers Monitored (${data.source || 'docker-api'})`;
+      }
+
+      if (contentEl) contentEl.style.display = 'block';
+      if (unavailEl) unavailEl.style.display = 'none';
+
+      updateSelectedContainerView();
+      return;
+    }
+  } catch {}
+
+  // Offline / unreachable fallback
+  if (badgeSource) {
+    badgeSource.textContent = 'UNAVAILABLE';
+    badgeSource.className = 'source-pill unavailable';
+  }
+  if (statusText) {
+    statusText.textContent = 'Container metrics unavailable (start docker compose)';
+  }
+  if (contentEl) contentEl.style.display = 'none';
+  if (unavailEl) {
+    unavailEl.style.display = 'block';
+    unavailEl.textContent = 'Container metrics unavailable (start docker compose)';
   }
 }
 
@@ -1122,6 +1342,14 @@ function initUI() {
   // Select first service by default without auto-scrolling
   const defaultSvc = currentBlastRadius?.changedServices?.[0] || 'auth';
   selectService(defaultSvc);
+
+  // Container metrics selector change listener
+  const containerSelect = document.getElementById('container-select');
+  if (containerSelect) {
+    containerSelect.addEventListener('change', () => {
+      updateSelectedContainerView();
+    });
+  }
 }
 
 function setupLiveUpdates() {

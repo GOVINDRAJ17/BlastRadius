@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const http = require('http');
 const { app, redis } = require('../index.js');
+const { normalizeCpuRate, calculateDockerCpuPercent, fetchFromPrometheus } = require('../containers.js');
 
 let server;
 let baseUrl;
@@ -235,4 +236,63 @@ test('Invariant 7: POST /api/reports rejects partial rebuild when full_rebuild i
   assert.strictEqual(res.status, 422);
   const data = await res.json();
   assert.ok(data.violations.some(v => v.includes('full_rebuild is true')));
+});
+
+test('CPU Normalization: normalizeCpuRate normalizes usage by core count', () => {
+  assert.strictEqual(normalizeCpuRate(0.5, 1), 50.0);
+  assert.strictEqual(normalizeCpuRate(0.5, 2), 25.0);
+  assert.strictEqual(normalizeCpuRate(1.0, 4), 25.0);
+  assert.strictEqual(normalizeCpuRate(0, 4), 0.0);
+  assert.strictEqual(normalizeCpuRate(-1, 2), 0.0);
+  assert.strictEqual(normalizeCpuRate(NaN, 1), 0.0);
+  assert.strictEqual(normalizeCpuRate(undefined, 1), 0.0);
+});
+
+test('Docker CPU calculation: calculateDockerCpuPercent handles delta and core normalization', () => {
+  const stats = {
+    cpu_stats: {
+      cpu_usage: { total_usage: 1000000000 },
+      system_cpu_usage: 2000000000
+    },
+    precpu_stats: {
+      cpu_usage: { total_usage: 500000000 },
+      system_cpu_usage: 1000000000
+    }
+  };
+  const pct = calculateDockerCpuPercent(stats);
+  assert.strictEqual(pct, 50.0);
+
+  // Missing precpu_stats returns 0.0
+  assert.strictEqual(calculateDockerCpuPercent({}), 0.0);
+});
+
+test('Container Metrics API: GET /api/containers returns 200 with container metrics contract', async () => {
+  const res = await fetch(`${baseUrl}/api/containers`);
+  assert.strictEqual(res.status, 200);
+  const data = await res.json();
+  assert.strictEqual(data.status, 'ok');
+  assert.ok(Array.isArray(data.containers));
+  assert.strictEqual(data.containers.length, 8);
+  assert.ok(['docker-api', 'prometheus', 'unavailable', 'redis-cache'].includes(data.source));
+});
+
+test('Container Metrics Fallback: returns null with reason when Prometheus is down and socket unavailable', async () => {
+  // Point to a non-existent port to simulate Prometheus down
+  const result = await fetchFromPrometheus('http://127.0.0.1:59999');
+  assert.strictEqual(result.status, 'ok');
+  assert.strictEqual(result.source, 'unavailable');
+  assert.strictEqual(result.containers.length, 8);
+
+  for (const c of result.containers) {
+    assert.strictEqual(c.cpu_percent, null);
+    assert.ok(typeof c.cpu_percent_reason === 'string' && c.cpu_percent_reason.length > 0);
+    assert.strictEqual(c.memory_bytes, null);
+    assert.ok(typeof c.memory_bytes_reason === 'string' && c.memory_bytes_reason.length > 0);
+    assert.strictEqual(c.health, null);
+    assert.ok(typeof c.health_reason === 'string' && c.health_reason.length > 0);
+    assert.strictEqual(c.restart_count, null);
+    assert.ok(typeof c.restart_count_reason === 'string' && c.restart_count_reason.length > 0);
+    assert.strictEqual(c.uptime_seconds, null);
+    assert.ok(typeof c.uptime_seconds_reason === 'string' && c.uptime_seconds_reason.length > 0);
+  }
 });

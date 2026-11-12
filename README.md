@@ -213,7 +213,8 @@ Rather than running generic anonymous scaling (`docker compose up --scale api=3`
 | `GET` | `/api/runs` | Public | Recent CI runs list (cache-first via Redis) | `{"source":"redis","runs":[...]}` |
 | `GET` | `/api/runs/:id` | Public | Single run details with scope contract | `{"id":"104","scope":{...}}` |
 | `GET` | `/api/infra/status`| Public | Replica heartbeats, container health, and traffic distribution | `{"active_replicas":3,"traffic":{...},"replicas":[...]}` |
-| `GET` | `/api/deployments`| Public | Deployment history | `{"deployments":[...]}` |
+| `GET` | `/api/containers`  | Public | Real container metrics (CPU, memory, health, restarts, uptime) | `{"status":"ok","source":"docker-api","containers":[...]}` |
+| `GET` | `/api/deployments` | Public | Deployment history | `{"deployments":[...]}` |
 | `POST`| `/api/reports` | Bearer | Authenticated ingestion of CI reports | `{"status":"ingested","id":"run-..."}` |
 
 ### Resilient Degradation
@@ -280,6 +281,28 @@ chmod +x scripts/demo-failover.sh
     - **5xx Error Rate**: Monitored failover indicator.
     - **Healthy Replicas Count**: Instant `up` gauge.
     - **Total CI Runs Ingested**: Lifetime run counter.
+
+### Container Metrics Architecture (`/api/containers`)
+The dashboard Container Metrics card exposes real-time telemetry across all 8 Compose services (`api-1`, `api-2`, `api-3`, `redis`, `nginx`, `prometheus`, `grafana`, `cadvisor`):
+
+| Container Field | Primary Source | Fallback Source | Description |
+| :--- | :--- | :--- | :--- |
+| `cpu_percent` | Docker Engine API (`/stats`) | Prometheus (`rate(container_cpu_usage_seconds_total[1m])`) | 1-minute rate normalized across active CPU cores. |
+| `memory_bytes` | Docker Engine API (`/stats`) | Prometheus (`container_memory_working_set_bytes`) | Container working-set memory footprint in bytes. |
+| `health` | Docker inspect (`State.Health.Status`) | Running state (`running` vs `stopped`) | Verified health check status (`healthy`, `unhealthy`, `exited`). |
+| `restart_count` | Docker inspect (`RestartCount`) | `null` (with reason) | Total container crash and restart count. |
+| `uptime_seconds` | Docker inspect (`StartedAt`) | Prometheus (`container_start_time_seconds`) | Elapsed seconds since last container start. |
+| `source` | `docker-api` | `prometheus` / `unavailable` | Data provider classification badge. |
+
+#### Windows cAdvisor Limitation (Docker Desktop on WSL2)
+Google cAdvisor is integrated as a Compose service (`gcr.io/cadvisor/cadvisor:v0.49.1`) and scraped by Prometheus at `http://cadvisor:8080/metrics`. On Linux bare metal and standard VMs, cAdvisor maps container cgroups directly to container names. However, on **Docker Desktop for Windows** utilizing the WSL2 backend with the `containerd` image store, cAdvisor encounters mount isolation (`open /rootfs/var/lib/docker/image/overlayfs/layerdb/mounts/.../mount-id: no such file or directory`) and emits cgroup metrics solely for systemd slices (`/system.slice/*`, `/user.slice/*`) without container names or Compose labels.
+
+#### Docker Engine API Fallback & Security Trade-off
+To guarantee authentic, non-fabricated telemetry on Windows workstations:
+1. **Local Socket Mounting**: The Docker UNIX socket (`/var/run/docker.sock`) is mounted **read-only** (`:ro`) exclusively into the `api-1` service in `docker-compose.yml`.
+2. **Least Privilege**: The Docker socket is **never** mounted into `api-2`, `api-3`, or production templates (`docker-compose.prod.yml`, AWS ECS task definitions).
+3. **Distributed Cache**: `api-1` queries the Docker Engine API and caches all 8 container states in Redis (`blastradius:containers:all`, TTL 10 seconds), allowing `api-2` and `api-3` to serve cached container telemetry through NGINX load balancing with zero host privilege.
+4. **Security Trade-off**: Read-only Docker socket mounting permits the container process to inspect metadata, environment declarations, and resource utilization of neighbor containers on the host Docker daemon. In production or multi-tenant clouds, container metrics must instead be retrieved via out-of-band monitoring agents (such as AWS CloudWatch Container Insights or Datadog DaemonSets) rather than mounting the Docker daemon socket into application containers.
 
 ---
 

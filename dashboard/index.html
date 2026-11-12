@@ -166,19 +166,54 @@
       </div>
 
       <!-- Card 3: Container Monitoring -->
-      <div class="infra-card">
+      <div class="infra-card" id="card-container-metrics">
         <div class="infra-card-header">
           <span class="infra-card-title">📊 Container Metrics</span>
           <span class="source-pill unavailable" id="badge-cadvisor-source">UNAVAILABLE</span>
         </div>
-        <div style="font-size: 0.8rem; color: var(--text-secondary);" id="cadvisor-status-text">
-          Host: Docker Engine (Alpine Node 22)
+        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.35rem;" id="cadvisor-status-text">
+          Container metrics unavailable (start docker compose)
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; font-size: 0.78rem;">
-          <div>CPU Usage: <strong id="cadvisor-cpu">unavailable</strong></div>
-          <div>Memory: <strong id="cadvisor-mem">unavailable</strong></div>
-          <div>Health: <strong id="cadvisor-health" style="color: #34d399;">UP</strong></div>
-          <div>Restarts: <strong id="cadvisor-restarts">0</strong></div>
+        <div id="container-metrics-content" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <label for="container-select" style="font-size: 0.72rem; color: #94a3b8;">Inspect Container:</label>
+            <select id="container-select" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; font-size: 0.72rem; padding: 2px 6px;">
+              <option value="all">All (8 Containers Summary)</option>
+              <option value="redis">redis</option>
+              <option value="api-1">api-1</option>
+              <option value="api-2">api-2</option>
+              <option value="api-3">api-3</option>
+              <option value="nginx">nginx</option>
+              <option value="prometheus">prometheus</option>
+              <option value="grafana">grafana</option>
+              <option value="cadvisor">cadvisor</option>
+            </select>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; font-size: 0.78rem;" id="container-stat-grid">
+            <div>CPU: <strong id="cadvisor-cpu" title="">--</strong></div>
+            <div>Memory: <strong id="cadvisor-mem" title="">--</strong></div>
+            <div>Health: <strong id="cadvisor-health" title="">--</strong></div>
+            <div>Restarts: <strong id="cadvisor-restarts" title="">--</strong></div>
+          </div>
+          <div id="container-reason-text" style="font-size: 0.7rem; color: #f87171; margin-top: 0.25rem; display: none;"></div>
+          <div id="containers-table-container" style="margin-top: 0.5rem; max-height: 120px; overflow-y: auto; font-size: 0.7rem;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; color: #94a3b8;">
+              <thead>
+                <tr style="border-bottom: 1px solid #334155; color: #64748b;">
+                  <th style="padding: 2px 4px;">Service</th>
+                  <th style="padding: 2px 4px;">Health</th>
+                  <th style="padding: 2px 4px;">CPU</th>
+                  <th style="padding: 2px 4px;">Memory</th>
+                  <th style="padding: 2px 4px;">Restarts</th>
+                </tr>
+              </thead>
+              <tbody id="containers-table-body">
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div id="container-metrics-unavailable" style="font-size: 0.75rem; color: #f87171; margin-top: 0.25rem;">
+          Container metrics unavailable (start docker compose)
         </div>
       </div>
 
