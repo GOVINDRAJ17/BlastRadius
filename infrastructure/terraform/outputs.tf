@@ -27,3 +27,4 @@ output "redis_endpoint" {
   description = "ElastiCache Redis primary endpoint address"
   value       = aws_elasticache_cluster.redis.cache_nodes[0].address
 }
+

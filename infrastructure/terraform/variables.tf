@@ -46,3 +46,4 @@ variable "report_api_secret" {
   sensitive   = true
   default     = "blastradius_report_secret_default_9f8e7d"
 }
+
