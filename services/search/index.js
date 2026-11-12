@@ -7,7 +7,8 @@ const mockCatalog = [
   { id: 'item_1', name: 'Cloud Server Pro', category: 'compute', tags: ['cloud', 'vm', 'linux'] },
   { id: 'item_2', name: 'Managed Database', category: 'storage', tags: ['sql', 'postgres', 'data'] },
   { id: 'item_3', name: 'Global CDN', category: 'network', tags: ['cdn', 'edge', 'cache'] },
-  { id: 'item_4', name: 'AI Inference Node', category: 'compute', tags: ['ai', 'gpu', 'inference'] }
+  { id: 'item_4', name: 'AI Inference Node', category: 'compute', tags: ['ai', 'gpu', 'inference'] },
+  { id: 'item_5', name: 'Edge Compute Worker', category: 'compute', tags: ['edge', 'worker', 'lambda', 'wasm'] }
 ];
 
 function searchCatalog(query) {

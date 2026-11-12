@@ -1,128 +1,83 @@
 {
-  "commit_sha": "7b292d5915f1713a038b17d20f03eddeb39baf22",
-  "base_ref": "non-existent-branch-999",
-  "changed_files": [],
-  "changed_services": [],
+  "commit_sha": "537c60ab04ecd9150221c8770229f0af38e0a0e4",
+  "base_ref": "master",
+  "changed_files": [
+    "services/search/index.js",
+    "services/search/test/index.test.js"
+  ],
+  "changed_services": [
+    "search"
+  ],
   "directly_affected": [
-    "api",
-    "auth",
-    "notifications",
-    "payments",
-    "search",
-    "shared"
+    "search"
   ],
   "transitively_affected": [],
   "tested": [
-    "api",
-    "auth",
-    "notifications",
-    "payments",
-    "search",
-    "shared"
+    "search"
   ],
   "to_build": [
-    "api",
-    "auth",
-    "notifications",
-    "payments",
-    "search",
-    "shared"
+    "search"
   ],
   "to_deploy": [
+    "search"
+  ],
+  "skipped": [
     "api",
     "auth",
     "notifications",
     "payments",
-    "search",
     "shared"
   ],
-  "skipped": [],
-  "full_rebuild": true,
-  "full_rebuild_reason": "Missing or invalid git diff base ref 'non-existent-branch-999' (new branch or force push)",
+  "full_rebuild": false,
+  "full_rebuild_reason": null,
   "causal_paths": {
-    "api": [
-      "root",
-      "api"
-    ],
-    "auth": [
-      "root",
-      "auth"
-    ],
-    "notifications": [
-      "root",
-      "notifications"
-    ],
-    "payments": [
-      "root",
-      "payments"
-    ],
     "search": [
-      "root",
       "search"
-    ],
-    "shared": [
-      "root",
-      "shared"
     ]
   },
-  "timestamp": "2026-11-12T17:13:04.219Z",
-  "commitSha": "7b292d5",
-  "branch": "master",
-  "commitMessage": "update: blast radius scope",
+  "timestamp": "2026-11-12T17:42:51.540Z",
+  "commitSha": "537c60a",
+  "branch": "demo/selective-search",
+  "commitMessage": "feat(grafana): enable anonymous admin access to view BlastRadius dashboards instantly",
   "totalServices": 6,
-  "changedServices": [],
+  "changedServices": [
+    "search"
+  ],
   "affectedServices": [
+    "search"
+  ],
+  "skippedServices": [
     "api",
     "auth",
     "notifications",
     "payments",
-    "search",
     "shared"
   ],
-  "skippedServices": [],
-  "changedFiles": [],
-  "fileDetailsByService": {},
+  "changedFiles": [
+    "services/search/index.js",
+    "services/search/test/index.test.js"
+  ],
+  "fileDetailsByService": {
+    "search": [
+      "services/search/index.js",
+      "services/search/test/index.test.js"
+    ]
+  },
   "globalFiles": [],
   "explanations": {
-    "api": "Included in full rebuild: Missing or invalid git diff base ref 'non-existent-branch-999' (new branch or force push)",
-    "auth": "Included in full rebuild: Missing or invalid git diff base ref 'non-existent-branch-999' (new branch or force push)",
-    "notifications": "Included in full rebuild: Missing or invalid git diff base ref 'non-existent-branch-999' (new branch or force push)",
-    "payments": "Included in full rebuild: Missing or invalid git diff base ref 'non-existent-branch-999' (new branch or force push)",
-    "search": "Included in full rebuild: Missing or invalid git diff base ref 'non-existent-branch-999' (new branch or force push)",
-    "shared": "Included in full rebuild: Missing or invalid git diff base ref 'non-existent-branch-999' (new branch or force push)"
+    "search": "Directly modified in git diff (2 file(s))"
   },
   "impactPaths": {
-    "api": [
-      "root",
-      "api"
-    ],
-    "auth": [
-      "root",
-      "auth"
-    ],
-    "notifications": [
-      "root",
-      "notifications"
-    ],
-    "payments": [
-      "root",
-      "payments"
-    ],
     "search": [
-      "root",
       "search"
-    ],
-    "shared": [
-      "root",
-      "shared"
     ]
   },
   "metrics": {
-    "affectedCount": 6,
-    "skippedCount": 0,
-    "percentSaved": 0,
-    "estimatedTimeSavedMinutes": 0,
-    "estimatedActualTimeMinutes": 15,
+    "affectedCount": 1,
+    "skippedCount": 5,
+    "percentSaved": 83,
+    "estimatedTimeSavedMinutes": 12.5,
+    "estimatedActualTimeMinutes": 2.5,
     "estimatedTotalTimeMinutes": 15
   }
 }
