@@ -1,0 +1,68 @@
+{
+  "commit_sha": "7b292d5915f1713a038b17d20f03eddeb39baf22",
+  "base_ref": "non-existent-branch-999",
+  "changed_files": [],
+  "changed_services": [],
+  "directly_affected": [
+    "api",
+    "auth",
+    "notifications",
+    "payments",
+    "search",
+    "shared"
+  ],
+  "transitively_affected": [],
+  "tested": [
+    "api",
+    "auth",
+    "notifications",
+    "payments",
+    "search",
+    "shared"
+  ],
+  "to_build": [
+    "api",
+    "auth",
+    "notifications",
+    "payments",
+    "search",
+    "shared"
+  ],
+  "to_deploy": [
+    "api",
+    "auth",
+    "notifications",
+    "payments",
+    "search",
+    "shared"
+  ],
+  "skipped": [],
+  "full_rebuild": true,
+  "full_rebuild_reason": "Missing or invalid git diff base ref 'non-existent-branch-999' (new branch or force push)",
+  "causal_paths": {
+    "api": [
+      "root",
+      "api"
+    ],
+    "auth": [
+      "root",
+      "auth"
+    ],
+    "notifications": [
+      "root",
+      "notifications"
+    ],
+    "payments": [
+      "root",
+      "payments"
+    ],
+    "search": [
+      "root",
+      "search"
+    ],
+    "shared": [
+      "root",
+      "shared"
+    ]
+  }
+}

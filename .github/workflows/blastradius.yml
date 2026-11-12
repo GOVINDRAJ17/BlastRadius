@@ -1,4 +1,4 @@
-name: BlastRadius Selective CI
+name: BlastRadius Selective CI/CD 2.0
 
 on:
   pull_request:
@@ -7,22 +7,27 @@ on:
     branches: [main, master]
 
 permissions:
-  contents: write
-  pull-requests: write
-  issues: write
+  contents: read
 
 jobs:
   # ============================================================================
   # JOB 1: compute-scope
-  # Calculates git diff, maps changed files to dependency graph, determines
-  # blast radius, outputs affected services array, and posts PR status comment.
+  # Executes AST analysis, resolves git diff, computes canonical deployment-scope contract,
+  # uploads artifacts, posts PR summary comment, and ingests report into API service.
   # ============================================================================
   compute-scope:
-    name: 💥 Compute Blast Radius
+    name: 💥 Compute Blast Radius Scope
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     outputs:
-      services: ${{ steps.scope.outputs.services }}
+      tested: ${{ steps.scope.outputs.tested }}
+      to_build: ${{ steps.scope.outputs.to_build }}
+      to_deploy: ${{ steps.scope.outputs.to_deploy }}
       has_affected: ${{ steps.scope.outputs.has_affected }}
+      full_rebuild: ${{ steps.scope.outputs.full_rebuild }}
     steps:
       - name: Checkout Code with Full History
         uses: actions/checkout@v4
@@ -35,13 +40,13 @@ jobs:
           node-version: 22
           cache: 'npm'
 
-      - name: Install Dependencies
+      - name: Install Monorepo Dependencies
         run: npm ci || npm install
 
-      - name: Build Dependency Graph
+      - name: Build AST Dependency Graph
         run: node build-graph.js
 
-      - name: Compute Blast Radius & Export Scope
+      - name: Compute Scope Contract
         id: scope
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -52,41 +57,46 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "Pull request event detected: target base '${{ github.base_ref }}'"
+            echo "Pull request event detected: base '${{ github.base_ref }}'"
             git fetch origin "${{ github.base_ref }}" --depth=0 2>/dev/null || true
-            CHANGED_FILES=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" 2>/dev/null || git diff --name-only "${{ github.base_ref }}...HEAD")
+            CHANGED_FILES=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" 2>/dev/null || git diff --name-only "${{ github.base_ref }}...HEAD" || true)
           else
             echo "Push event detected: ${{ github.sha }}"
             BEFORE_SHA="${{ github.event.before }}"
             if [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
               CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git ls-files)
             else
-              CHANGED_FILES=$(git diff --name-only "$BEFORE_SHA" "${{ github.sha }}")
+              CHANGED_FILES=$(git diff --name-only "$BEFORE_SHA" "${{ github.sha }}" 2>/dev/null || git ls-files)
             fi
           fi
 
           echo "Changed files detected:"
           echo "$CHANGED_FILES"
 
-          # Convert changed files to comma-separated list for compute-blast-radius.js
           FILES_COMMA=$(echo "$CHANGED_FILES" | tr '\n' ',' | sed 's/,$//')
           node compute-blast-radius.js --files "$FILES_COMMA"
 
-          # Record historical metrics if script exists
+          # Record historical metrics to file (for artifact archiving)
           if [ -f "record-metrics.js" ]; then
             node record-metrics.js
           fi
 
-          # Sync live CI report to Supabase database
+          # Sync live CI report to Supabase
           if [ -f "record-metrics-supabase.js" ]; then
             node record-metrics-supabase.js || true
           fi
 
-          # Read blast-radius.json and output results to GITHUB_OUTPUT
-          AFFECTED_JSON=$(node -e "const d=require('./blast-radius.json'); console.log(JSON.stringify(d.affectedServices || []));")
-          AFFECTED_COUNT=$(node -e "const d=require('./blast-radius.json'); console.log((d.affectedServices || []).length);")
+          # Read deployment-scope.json for GITHUB_OUTPUT
+          TESTED_JSON=$(node -e "const d=require('./deployment-scope.json'); console.log(JSON.stringify(d.tested || []));")
+          TO_BUILD_JSON=$(node -e "const d=require('./deployment-scope.json'); console.log(JSON.stringify(d.to_build || []));")
+          TO_DEPLOY_JSON=$(node -e "const d=require('./deployment-scope.json'); console.log(JSON.stringify(d.to_deploy || []));")
+          AFFECTED_COUNT=$(node -e "const d=require('./deployment-scope.json'); console.log((d.tested || []).length);")
+          FULL_REBUILD=$(node -e "const d=require('./deployment-scope.json'); console.log(d.full_rebuild ? 'true' : 'false');")
 
-          echo "services=$AFFECTED_JSON" >> "$GITHUB_OUTPUT"
+          echo "tested=$TESTED_JSON" >> "$GITHUB_OUTPUT"
+          echo "to_build=$TO_BUILD_JSON" >> "$GITHUB_OUTPUT"
+          echo "to_deploy=$TO_DEPLOY_JSON" >> "$GITHUB_OUTPUT"
+          echo "full_rebuild=$FULL_REBUILD" >> "$GITHUB_OUTPUT"
 
           if [ "$AFFECTED_COUNT" -gt 0 ]; then
             echo "has_affected=true" >> "$GITHUB_OUTPUT"
@@ -94,16 +104,33 @@ jobs:
             echo "has_affected=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Upload Blast Radius Artifacts
+      - name: Upload Deployment Scope & Graph Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: blast-radius-report
           path: |
-            dependency-graph.json
+            deployment-scope.json
             blast-radius.json
+            dependency-graph.json
             metrics-history.json
             dashboard/
           if-no-files-found: ignore
+
+      - name: POST Report to BlastRadius API Service
+        if: always()
+        env:
+          API_URL: ${{ secrets.API_SERVICE_URL }}
+          API_SECRET: ${{ secrets.REPORT_API_SECRET }}
+        run: |
+          if [ -n "$API_URL" ] && [ -n "$API_SECRET" ] && [ -f "deployment-scope.json" ]; then
+            echo "📡 Sending scope contract to API service ($API_URL)..."
+            curl -s -X POST "$API_URL/api/reports" \
+              -H "Authorization: Bearer $API_SECRET" \
+              -H "Content-Type: application/json" \
+              -d @deployment-scope.json || true
+          else
+            echo "ℹ️ API_SERVICE_URL or REPORT_API_SECRET not set, skipping API ingestion."
+          fi
 
       - name: Post PR Summary Comment
         if: github.event_name == 'pull_request'
@@ -111,39 +138,35 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            if (!fs.existsSync('blast-radius.json')) {
-              console.log('blast-radius.json not found, skipping comment.');
-              return;
-            }
+            if (!fs.existsSync('deployment-scope.json')) return;
 
-            const blast = JSON.parse(fs.readFileSync('blast-radius.json', 'utf-8'));
+            const scope = JSON.parse(fs.readFileSync('deployment-scope.json', 'utf-8'));
+            const blast = fs.existsSync('blast-radius.json')
+              ? JSON.parse(fs.readFileSync('blast-radius.json', 'utf-8'))
+              : {};
 
-            const directlyChanged = blast.changedServices && blast.changedServices.length > 0
-              ? blast.changedServices.map(s => `\`${s}\``).join(', ')
+            const directlyChanged = (scope.changed_services || []).length > 0
+              ? scope.changed_services.map(s => `\`${s}\``).join(', ')
               : '_None_';
 
-            const transitiveServices = (blast.affectedServices || []).filter(
-              s => !(blast.changedServices || []).includes(s)
-            );
-
-            const transitivelyAffected = transitiveServices.length > 0
-              ? transitiveServices.map(s => `\`${s}\``).join(', ')
+            const transitivelyAffected = (scope.transitively_affected || []).length > 0
+              ? scope.transitively_affected.map(s => `\`${s}\``).join(', ')
               : '_None_';
 
-            const skipped = blast.skippedServices && blast.skippedServices.length > 0
-              ? blast.skippedServices.map(s => `\`${s}\``).join(', ')
+            const skipped = (scope.skipped || []).length > 0
+              ? scope.skipped.map(s => `\`${s}\``).join(', ')
               : '_None_';
 
             const pctSaved = blast.metrics?.percentSaved ?? 0;
             const timeSaved = blast.metrics?.estimatedTimeSavedMinutes ?? 0;
-            const totalServices = blast.totalServices ?? 5;
-            const affectedCount = (blast.affectedServices || []).length;
-            const skippedCount = (blast.skippedServices || []).length;
+            const totalServices = 5;
+            const affectedCount = (scope.tested || []).length;
+            const skippedCount = (scope.skipped || []).length;
 
             let detailsTable = '';
             if (affectedCount > 0) {
-              detailsTable = blast.affectedServices.map(s => {
-                const isDirect = (blast.changedServices || []).includes(s);
+              detailsTable = scope.tested.map(s => {
+                const isDirect = (scope.changed_services || []).includes(s);
                 const badge = isDirect ? '🔴 **DIRECT**' : '🟠 **TRANSITIVE**';
                 const reason = blast.explanations?.[s] || 'Dependency propagation';
                 return `| \`${s}\` | ${badge} | ${reason} |`;
@@ -152,23 +175,18 @@ jobs:
               detailsTable = '| _None_ | 🟢 **CLEAN** | No services affected by this diff |';
             }
 
-            let skippedDetails = '';
-            if (skippedCount > 0) {
-              skippedDetails = blast.skippedServices.map(
-                s => `| \`${s}\` | ⚪ **SKIPPED** | No incoming dependency path from changes |`
-              ).join('\n');
-            }
-
             const commentMarker = '<!-- blastradius-selective-ci-report -->';
             const body = `${commentMarker}
-            ## 💥 BlastRadius: Selective Monorepo CI Report
+            ## 💥 BlastRadius 2.0: Selective Monorepo CI/CD Report
 
             ### ⏱️ Summary: **${skippedCount}/${totalServices} Services Skipped (~${pctSaved}% CI Compute Saved)**
 
             | Metric | Details | Count |
             | :--- | :--- | :---: |
-            | 🎯 **Directly Changed** | ${directlyChanged} | ${(blast.changedServices || []).length} |
-            | ⚡ **Transitively Affected** | ${transitivelyAffected} | ${transitiveServices.length} |
+            | 🎯 **Directly Changed** | ${directlyChanged} | ${(scope.changed_services || []).length} |
+            | ⚡ **Transitively Affected** | ${transitivelyAffected} | ${(scope.transitively_affected || []).length} |
+            | 🧪 **Tested & Built** | ${(scope.tested || []).map(s => `\`${s}\``).join(', ') || '_None_'} | ${affectedCount} |
+            | 🚀 **To Deploy** | ${(scope.to_deploy || []).map(s => `\`${s}\``).join(', ') || '_None_'} | ${(scope.to_deploy || []).length} |
             | 🛡️ **Safely Skipped** | ${skipped} | ${skippedCount} |
             | ⏳ **Estimated Time Saved** | **~${timeSaved} minutes** | **${pctSaved}%** |
 
@@ -178,16 +196,6 @@ jobs:
             | Service | Impact Type | Reason / Propagation Trail |
             | :--- | :---: | :--- |
             ${detailsTable}
-
-            ${skippedCount > 0 ? `
-            <details>
-            <summary><b>🛡️ View Safely Skipped Services (${skippedCount})</b></summary>
-
-            | Service | Status | Reason |
-            | :--- | :---: | :--- |
-            ${skippedDetails}
-
-            </details>` : ''}
 
             > 📊 *Full interactive topology graph report available in workflow artifacts (\`blast-radius-report\`).*
             `;
@@ -218,18 +226,19 @@ jobs:
 
   # ============================================================================
   # JOB 2: test-affected
-  # Dynamically executes Dockerized tests only for services identified in the
-  # blast radius. Guarded against empty matrix errors via has_affected check.
+  # Dynamically executes Dockerized tests ONLY for services identified in 'tested'.
   # ============================================================================
   test-affected:
     name: 🧪 Test [${{ matrix.service }}]
     needs: compute-scope
     if: needs.compute-scope.outputs.has_affected == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
-        service: ${{ fromJson(needs.compute-scope.outputs.services) }}
+        service: ${{ fromJson(needs.compute-scope.outputs.tested) }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -243,3 +252,80 @@ jobs:
         run: |
           echo "Running isolated test suite for service: ${{ matrix.service }}"
           docker run --rm blastradius-${{ matrix.service }}:latest
+
+  # ============================================================================
+  # JOB 3: build-images
+  # Builds Docker images tagged with commit SHA ONLY for services in 'to_build'.
+  # ============================================================================
+  build-images:
+    name: 📦 Build Image [${{ matrix.service }}]
+    needs: [compute-scope, test-affected]
+    if: needs.compute-scope.outputs.has_affected == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.compute-scope.outputs.to_build) }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Production Image
+        run: |
+          echo "Building production image: blastradius-${{ matrix.service }}:${{ github.sha }}"
+          docker build -t blastradius-${{ matrix.service }}:${{ github.sha }} -t blastradius-${{ matrix.service }}:latest -f services/${{ matrix.service }}/Dockerfile .
+
+  # ============================================================================
+  # JOB 4: cloud-deploy (Gated by CLOUD_DEPLOY_ENABLED)
+  # Deploys ONLY services in 'to_deploy' to AWS ECS / ECR via OIDC.
+  # ============================================================================
+  cloud-deploy:
+    name: 🚀 Cloud Deploy [${{ matrix.service }}]
+    needs: [compute-scope, build-images]
+    if: vars.CLOUD_DEPLOY_ENABLED == 'true' && needs.compute-scope.outputs.has_affected == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.compute-scope.outputs.to_deploy) }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Tag and Push Image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          SERVICE: ${{ matrix.service }}
+        run: |
+          docker tag blastradius-${SERVICE}:${{ github.sha }} ${ECR_REGISTRY}/blastradius-${SERVICE}:${{ github.sha }}
+          docker push ${ECR_REGISTRY}/blastradius-${SERVICE}:${{ github.sha }}
+
+      - name: Deploy Service to ECS
+        env:
+          CLUSTER: ${{ vars.ECS_CLUSTER_NAME || 'blastradius-cluster' }}
+          SERVICE: ${{ matrix.service }}
+        run: |
+          echo "Updating ECS service for ${SERVICE}..."
+          aws ecs update-service --cluster ${CLUSTER} --service blastradius-${SERVICE} --force-new-deployment
+
+      - name: Wait for ECS Service Stability
+        env:
+          CLUSTER: ${{ vars.ECS_CLUSTER_NAME || 'blastradius-cluster' }}
+          SERVICE: ${{ matrix.service }}
+        run: |
+          aws ecs wait services-stable --cluster ${CLUSTER} --services blastradius-${SERVICE}

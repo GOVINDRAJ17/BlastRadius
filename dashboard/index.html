@@ -36,13 +36,13 @@
     </div>
 
     <div class="header-controls">
-      <label for="scenario-select" style="font-size: 0.85rem; color: var(--text-secondary);">Simulate Scope:</label>
+      <label for="scenario-select" style="font-size: 0.85rem; color: var(--text-secondary);">Scope Mode:</label>
       <select id="scenario-select" class="scenario-select">
-        <option value="current">Current Run (Git Diff)</option>
-        <option value="auth_only">Simulate: 'auth' Changed</option>
-        <option value="search_only">Simulate: 'search' Changed</option>
-        <option value="notifications_only">Simulate: 'notifications' Changed</option>
-        <option value="shared_only">Simulate: 'shared' Changed (Full Rebuild)</option>
+        <option value="current">Current Run [CONTRACT / LAST-RUN]</option>
+        <option value="auth_only">Simulate: 'auth' Changed [SIMULATED]</option>
+        <option value="search_only">Simulate: 'search' Changed [SIMULATED]</option>
+        <option value="notifications_only">Simulate: 'notifications' Changed [SIMULATED]</option>
+        <option value="shared_only">Simulate: 'shared' Changed (Full Rebuild) [SIMULATED]</option>
       </select>
       <button class="btn" id="btn-refresh" onclick="window.refreshDashboard()">↻ Refresh</button>
     </div>
@@ -109,6 +109,103 @@
         </div>
         <div class="stat-value" id="stat-saved">~40%</div>
         <div class="stat-subtext" id="stat-saved-mins">~5.0 mins saved this run</div>
+      </div>
+    </section>
+
+    <!-- BlastRadius 2.0 Infrastructure, Load Balancing & Cloud Status Grid -->
+    <section class="infra-grid">
+      <!-- Card 1: API Cluster & Replicas -->
+      <div class="infra-card">
+        <div class="infra-card-header">
+          <span class="infra-card-title">🖥️ API Service Cluster</span>
+          <span class="source-pill live" id="badge-api-source">Checking...</span>
+        </div>
+        <div style="font-size: 0.82rem; color: var(--text-secondary);">
+          Explicit Replicas (<code id="active-replica-count">0/3 active</code>):
+        </div>
+        <div class="replica-row" id="replica-badges-container">
+          <span class="replica-badge" id="rep-api-1">api-1: ...</span>
+          <span class="replica-badge" id="rep-api-2">api-2: ...</span>
+          <span class="replica-badge" id="rep-api-3">api-3: ...</span>
+        </div>
+        <div style="font-size: 0.75rem; color: #64748b;" id="infra-redis-status">
+          Redis Cache: checking...
+        </div>
+      </div>
+
+      <!-- Card 2: NGINX Load Balancer -->
+      <div class="infra-card">
+        <div class="infra-card-header">
+          <span class="infra-card-title">⚖️ NGINX Load Balancer</span>
+          <span class="source-pill live" id="badge-lb-source">Active</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary);">
+          <span>Algorithm: <strong>Round-Robin</strong></span>
+          <span id="lb-fails-text">Passive Fails: 0</span>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.2rem;">Replica Traffic Distribution:</div>
+          <div class="dist-bar-container">
+            <div class="dist-bar-segment api-1" id="dist-api-1" style="width: 33.3%;" title="api-1"></div>
+            <div class="dist-bar-segment api-2" id="dist-api-2" style="width: 33.3%;" title="api-2"></div>
+            <div class="dist-bar-segment api-3" id="dist-api-3" style="width: 33.3%;" title="api-3"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #64748b; margin-top: 0.2rem;">
+            <span id="tally-api-1">api-1: ~33%</span>
+            <span id="tally-api-2">api-2: ~33%</span>
+            <span id="tally-api-3">api-3: ~33%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Container Monitoring -->
+      <div class="infra-card">
+        <div class="infra-card-header">
+          <span class="infra-card-title">📊 Container Metrics</span>
+          <span class="source-pill unavailable" id="badge-cadvisor-source">UNAVAILABLE</span>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-secondary);" id="cadvisor-status-text">
+          Host: Docker Engine (Alpine Node 22)
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; font-size: 0.78rem;">
+          <div>CPU Usage: <strong id="cadvisor-cpu">unavailable</strong></div>
+          <div>Memory: <strong id="cadvisor-mem">unavailable</strong></div>
+          <div>Health: <strong id="cadvisor-health" style="color: #34d399;">UP</strong></div>
+          <div>Restarts: <strong id="cadvisor-restarts">0</strong></div>
+        </div>
+      </div>
+
+      <!-- Card 4: Cloud Deployment (AWS ECS / Fargate) -->
+      <div class="infra-card">
+        <div class="infra-card-header">
+          <span class="infra-card-title">☁️ AWS ECS Fargate</span>
+          <span class="source-pill unavailable" id="badge-cloud-source">GATED / LOCAL</span>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-secondary);">
+          Cluster: <code id="cloud-cluster-name">blastradius-cluster</code>
+        </div>
+        <div style="font-size: 0.78rem; color: #94a3b8;" id="cloud-status-text">
+          Cloud pipeline gated by <code>CLOUD_DEPLOY_ENABLED=false</code>. Running on local Compose stack.
+        </div>
+      </div>
+    </section>
+
+    <!-- Selective Deployment Scope Contract & Mathematical Formula -->
+    <section class="infra-card" style="margin-bottom: 1.5rem;">
+      <div class="infra-card-header">
+        <span class="infra-card-title">📋 Selective Deployment Scope Contract (Phase 1)</span>
+        <span class="source-pill last-run" id="badge-contract-source">CONTRACT / LAST-RUN</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; font-size: 0.82rem;">
+        <div>🎯 <strong>Directly Changed:</strong> <code id="scope-directly-changed">None</code></div>
+        <div>⚡ <strong>Transitively Affected:</strong> <code id="scope-transitively-affected">None</code></div>
+        <div>🧪 <strong>Tested:</strong> <code id="scope-tested">None</code></div>
+        <div>📦 <strong>To Build:</strong> <code id="scope-to-build">None</code></div>
+        <div>🚀 <strong>To Deploy:</strong> <code id="scope-to-deploy">None</code></div>
+        <div>🛡️ <strong>Skipped:</strong> <code id="scope-skipped">None</code></div>
+      </div>
+      <div class="formula-box">
+        CI Compute Savings Formula: <strong>Time Saved = (Skipped Services Count) × 2.5 minutes</strong> | Full Rebuild Fallback: <span id="scope-full-rebuild">false</span> (<span id="scope-rebuild-reason">None</span>)
       </div>
     </section>
 

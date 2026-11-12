@@ -1,7 +1,8 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-03T11:30:24.914Z",
+  "generatedAt": "2026-11-12T17:13:03.954Z",
   "nodes": [
+    "api",
     "auth",
     "notifications",
     "payments",
@@ -9,6 +10,11 @@
     "shared"
   ],
   "serviceStats": {
+    "api": {
+      "filesParsed": 2,
+      "totalImports": 12,
+      "internalDependencies": []
+    },
     "auth": {
       "filesParsed": 2,
       "totalImports": 4,
@@ -44,6 +50,7 @@
     }
   },
   "dependencies": {
+    "api": [],
     "auth": [
       "shared"
     ],
@@ -59,6 +66,7 @@
     "shared": []
   },
   "reverseDependencies": {
+    "api": [],
     "auth": [
       "payments"
     ],

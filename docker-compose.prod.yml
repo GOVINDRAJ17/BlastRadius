@@ -1,0 +1,16 @@
+# ============================================================================
+# BlastRadius 2.0 - Production Docker Compose Override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml config
+# ============================================================================
+services:
+  nginx:
+    ports:
+      - "80:80"
+      - "443:443"
+
+  # Internal services publish zero host ports in production
+  prometheus:
+    ports: []
+
+  grafana:
+    ports: []

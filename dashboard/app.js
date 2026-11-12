@@ -340,8 +340,25 @@ ok 4 - search/getCatalogItem retrieves correct item
 
 let graphData = FALLBACK_GRAPH;
 let currentBlastRadius = null;
+let currentScopeData = null;
 let historyData = null;
 let network = null;
+
+// Determine API base URL (supports local mode, ?api= query, or relative)
+function getApiBaseUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramApi = urlParams.get('api');
+  if (paramApi) return paramApi.replace(/\/$/, '');
+
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    // If running under compose NGINX, proxy is at port 8080
+    if (window.location.port === '8080') return '';
+    return 'http://localhost:8080';
+  }
+
+  // Deployed production Vercel
+  return '';
+}
 
 async function fetchJSON(relPath) {
   const t = Date.now();
@@ -369,10 +386,11 @@ let isUIInitialized = false;
 
 async function loadData() {
   try {
-    const [graphRes, blastRes, histRes] = await Promise.all([
+    const [graphRes, blastRes, histRes, scopeRes] = await Promise.all([
       fetchJSON('dependency-graph.json'),
       fetchJSON('blast-radius.json'),
-      fetchJSON('metrics-history.json')
+      fetchJSON('metrics-history.json'),
+      fetchJSON('deployment-scope.json')
     ]);
 
     if (graphRes) graphData = graphRes;
@@ -384,6 +402,7 @@ async function loadData() {
       SCENARIOS.current = SCENARIOS.auth_only;
     }
     if (histRes) historyData = histRes;
+    if (scopeRes) currentScopeData = scopeRes;
   } catch (err) {
     console.warn('Using fallback simulation state:', err);
     currentBlastRadius = SCENARIOS.auth_only;
@@ -404,8 +423,11 @@ async function loadData() {
 
   renderGraph();
   renderStats();
+  renderScopeContract();
   renderServiceList();
   renderHistory();
+  loadInfraStatus();
+
   const activeSvc = currentBlastRadius?.changedServices?.[0] || currentBlastRadius?.affectedServices?.[0] || 'auth';
   selectService(activeSvc);
 
@@ -420,6 +442,99 @@ async function loadData() {
       }
     })
     .catch(() => {});
+}
+
+// Render Phase 1 Deployment Scope Contract panel
+function renderScopeContract() {
+  const blast = currentBlastRadius || SCENARIOS.auth_only;
+  const isSimulated = blast !== SCENARIOS.current;
+  const scope = (isSimulated ? null : currentScopeData) || blast;
+
+  const directlyChanged = blast.changedServices || scope.changed_services || [];
+  const directlyAffected = scope.directly_affected || directlyChanged;
+  const transitivelyAffected = scope.transitively_affected || (blast.affectedServices || []).filter(s => !directlyChanged.includes(s));
+  const tested = scope.tested || blast.affectedServices || [];
+  const toBuild = scope.to_build || tested;
+  const toDeploy = scope.to_deploy || tested;
+  const skipped = scope.skipped || blast.skippedServices || [];
+  const fullRebuild = scope.full_rebuild ?? (blast.metrics?.percentSaved === 0 && blast.affectedServices?.length === 5);
+  const rebuildReason = scope.full_rebuild_reason || (fullRebuild ? 'Core shared package or root manifest modified' : 'None');
+
+  const badgeContract = document.getElementById('badge-contract-source');
+  if (badgeContract) {
+    if (isSimulated) {
+      badgeContract.textContent = 'SIMULATED';
+      badgeContract.className = 'source-pill simulated';
+    } else {
+      badgeContract.textContent = 'CONTRACT / LAST-RUN';
+      badgeContract.className = 'source-pill last-run';
+    }
+  }
+
+  const elDirect = document.getElementById('scope-directly-changed');
+  const elTrans = document.getElementById('scope-transitively-affected');
+  const elTested = document.getElementById('scope-tested');
+  const elBuild = document.getElementById('scope-to-build');
+  const elDeploy = document.getElementById('scope-to-deploy');
+  const elSkipped = document.getElementById('scope-skipped');
+  const elRebuild = document.getElementById('scope-full-rebuild');
+  const elReason = document.getElementById('scope-rebuild-reason');
+
+  if (elDirect) elDirect.textContent = directlyChanged.length ? directlyChanged.join(', ') : 'None';
+  if (elTrans) elTrans.textContent = transitivelyAffected.length ? transitivelyAffected.join(', ') : 'None';
+  if (elTested) elTested.textContent = tested.length ? tested.join(', ') : 'None';
+  if (elBuild) elBuild.textContent = toBuild.length ? toBuild.join(', ') : 'None';
+  if (elDeploy) elDeploy.textContent = toDeploy.length ? toDeploy.join(', ') : 'None';
+  if (elSkipped) elSkipped.textContent = skipped.length ? skipped.join(', ') : 'None';
+  if (elRebuild) {
+    elRebuild.textContent = fullRebuild ? 'TRUE' : 'FALSE';
+    elRebuild.style.color = fullRebuild ? '#f87171' : '#34d399';
+  }
+  if (elReason) elReason.textContent = rebuildReason;
+}
+
+// Query infrastructure and replica status from local / remote API
+async function loadInfraStatus() {
+  const apiBase = getApiBaseUrl();
+  const badgeApi = document.getElementById('badge-api-source');
+  const countEl = document.getElementById('active-replica-count');
+  const redisEl = document.getElementById('infra-redis-status');
+
+  try {
+    const res = await fetch(`${apiBase}/api/infra/status`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (badgeApi) {
+        badgeApi.textContent = 'LIVE API (DOCKER)';
+        badgeApi.className = 'source-pill live';
+      }
+      if (countEl) {
+        countEl.textContent = `${data.active_replicas || 0}/${data.total_replicas || 3} active`;
+      }
+      if (redisEl) {
+        redisEl.textContent = `Redis Distributed Cache: ${data.redis || 'connected'}`;
+        redisEl.style.color = data.redis === 'connected' ? '#34d399' : '#f87171';
+      }
+
+      // Update replica badge pills
+      (data.replicas || []).forEach(rep => {
+        const el = document.getElementById(`rep-${rep.instance_id}`);
+        if (el) {
+          el.textContent = `${rep.instance_id}: ${rep.status.toUpperCase()}`;
+          el.className = `replica-badge ${rep.status === 'healthy' ? 'healthy' : 'unhealthy'}`;
+        }
+      });
+      return;
+    }
+  } catch {}
+
+  // If local API is offline, label accurately as UNAVAILABLE or LOCAL REPLICA
+  if (badgeApi) {
+    badgeApi.textContent = 'UNAVAILABLE (COMPOSE OFFLINE)';
+    badgeApi.className = 'source-pill unavailable';
+  }
+  if (countEl) countEl.textContent = '0/3 active (start docker compose)';
+  if (redisEl) redisEl.textContent = 'Redis Cache: start docker compose up -d';
 }
 
 function getNodeColor(svcName, blast) {
@@ -709,6 +824,7 @@ function fitGraph() {
 function renderStats() {
   const blast = currentBlastRadius || SCENARIOS.auth_only;
   const metrics = blast.metrics || {};
+  const isSimulated = blast !== SCENARIOS.current;
 
   document.getElementById('stat-total').textContent = blast.totalServices || 5;
   document.getElementById('stat-changed').textContent = blast.changedServices?.length || 0;
@@ -724,21 +840,29 @@ function renderStats() {
   const timeEl = document.getElementById('ci-time-tag');
 
   if (statusEl) {
-    const changed = (blast.changedServices || []).join(', ') || 'None';
-    const changedFiles = (blast.changedFiles || []).map(f => f.split('/').pop()).join(', ');
-    statusEl.textContent = `Analyzed change: [${changed}] ${changedFiles ? `via ${changedFiles}` : ''}`;
+    if (isSimulated) {
+      statusEl.textContent = `[SIMULATED FIXTURE] ${blast.name || 'Demo Scenario'}`;
+    } else {
+      const changed = (blast.changedServices || []).join(', ') || 'None';
+      const changedFiles = (blast.changedFiles || []).map(f => f.split('/').pop()).join(', ');
+      statusEl.textContent = `Analyzed change: [${changed}] ${changedFiles ? `via ${changedFiles}` : ''}`;
+    }
   }
   if (branchEl) {
-    branchEl.textContent = `branch: ${blast.branch || 'master'}`;
+    branchEl.textContent = isSimulated ? 'branch: simulation' : `branch: ${blast.branch || 'master'}`;
   }
   if (commitEl) {
-    commitEl.textContent = `commit: ${blast.commitSha || 'latest'}`;
+    commitEl.textContent = isSimulated ? 'commit: fixture' : `commit: ${blast.commitSha || 'latest'}`;
   }
-  if (timeEl && blast.timestamp) {
-    try {
-      const dt = new Date(blast.timestamp);
-      timeEl.textContent = dt.toLocaleTimeString();
-    } catch {}
+  if (timeEl) {
+    if (isSimulated) {
+      timeEl.textContent = 'fixture';
+    } else if (blast.timestamp) {
+      try {
+        const dt = new Date(blast.timestamp);
+        timeEl.textContent = dt.toLocaleTimeString();
+      } catch {}
+    }
   }
 }
 
@@ -909,6 +1033,7 @@ function initUI() {
     }
     renderGraph();
     renderStats();
+    renderScopeContract();
     renderServiceList();
     const firstSvc = currentBlastRadius.changedServices[0] || currentBlastRadius.affectedServices[0] || 'auth';
     selectService(firstSvc);

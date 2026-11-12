@@ -49,11 +49,37 @@ function recomputeAll() {
     }
 
     const changedFiles = getChangedFiles(null, null, null);
-    const blast = computeBlastRadius(graph, changedFiles);
+    const blast = computeBlastRadius(graph, changedFiles, {
+      base: changedFiles.baseRef || null,
+      missingBase: changedFiles.missingBase,
+      missingBaseReason: changedFiles.missingBaseReason,
+      baseRef: changedFiles.baseRef || null
+    });
     const blastJson = JSON.stringify(blast, null, 2);
     fs.writeFileSync(path.join(ROOT_DIR, 'blast-radius.json'), blastJson, 'utf-8');
     if (fs.existsSync(DASHBOARD_DIR)) {
       fs.writeFileSync(path.join(DASHBOARD_DIR, 'blast-radius.json'), blastJson, 'utf-8');
+    }
+
+    const scope = {
+      commit_sha: blast.commit_sha,
+      base_ref: blast.base_ref,
+      changed_files: blast.changed_files,
+      changed_services: blast.changed_services,
+      directly_affected: blast.directly_affected,
+      transitively_affected: blast.transitively_affected,
+      tested: blast.tested,
+      to_build: blast.to_build,
+      to_deploy: blast.to_deploy,
+      skipped: blast.skipped,
+      full_rebuild: blast.full_rebuild,
+      full_rebuild_reason: blast.full_rebuild_reason,
+      causal_paths: blast.causal_paths
+    };
+    const scopeJson = JSON.stringify(scope, null, 2);
+    fs.writeFileSync(path.join(ROOT_DIR, 'deployment-scope.json'), scopeJson, 'utf-8');
+    if (fs.existsSync(DASHBOARD_DIR)) {
+      fs.writeFileSync(path.join(DASHBOARD_DIR, 'deployment-scope.json'), scopeJson, 'utf-8');
     }
 
     console.log(`[BlastRadius Engine] Recomputed successfully: ${blast.changedServices.length} changed, ${blast.affectedServices.length} affected.`);

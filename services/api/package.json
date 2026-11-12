@@ -1,0 +1,17 @@
+{
+  "name": "blastradius-api",
+  "version": "2.0.0",
+  "description": "BlastRadius 2.0 Central API Service with metrics, health, cache, and ingestion",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "ioredis": "^5.4.2",
+    "prom-client": "^15.1.3"
+  }
+}

@@ -1,0 +1,24 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: 'blastradius-api-cluster'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['api-1:4000']
+        labels:
+          instance: 'api-1'
+          group: 'api'
+      - targets: ['api-2:4000']
+        labels:
+          instance: 'api-2'
+          group: 'api'
+      - targets: ['api-3:4000']
+        labels:
+          instance: 'api-3'
+          group: 'api'
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

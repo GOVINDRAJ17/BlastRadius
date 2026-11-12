@@ -1,13 +1,78 @@
 {
-  "timestamp": "2026-11-03T11:30:25.326Z",
-  "commitSha": "fa0999f",
-  "branch": "master",
-  "commitMessage": "update: blast radius scope",
-  "totalServices": 5,
-  "changedServices": [
+  "commit_sha": "7b292d5915f1713a038b17d20f03eddeb39baf22",
+  "base_ref": "non-existent-branch-999",
+  "changed_files": [],
+  "changed_services": [],
+  "directly_affected": [
+    "api",
+    "auth",
+    "notifications",
+    "payments",
+    "search",
     "shared"
   ],
+  "transitively_affected": [],
+  "tested": [
+    "api",
+    "auth",
+    "notifications",
+    "payments",
+    "search",
+    "shared"
+  ],
+  "to_build": [
+    "api",
+    "auth",
+    "notifications",
+    "payments",
+    "search",
+    "shared"
+  ],
+  "to_deploy": [
+    "api",
+    "auth",
+    "notifications",
+    "payments",
+    "search",
+    "shared"
+  ],
+  "skipped": [],
+  "full_rebuild": true,
+  "full_rebuild_reason": "Missing or invalid git diff base ref 'non-existent-branch-999' (new branch or force push)",
+  "causal_paths": {
+    "api": [
+      "root",
+      "api"
+    ],
+    "auth": [
+      "root",
+      "auth"
+    ],
+    "notifications": [
+      "root",
+      "notifications"
+    ],
+    "payments": [
+      "root",
+      "payments"
+    ],
+    "search": [
+      "root",
+      "search"
+    ],
+    "shared": [
+      "root",
+      "shared"
+    ]
+  },
+  "timestamp": "2026-11-12T17:13:04.219Z",
+  "commitSha": "7b292d5",
+  "branch": "master",
+  "commitMessage": "update: blast radius scope",
+  "totalServices": 6,
+  "changedServices": [],
   "affectedServices": [
+    "api",
     "auth",
     "notifications",
     "payments",
@@ -15,49 +80,49 @@
     "shared"
   ],
   "skippedServices": [],
-  "changedFiles": [
-    "services/shared/index.js"
-  ],
-  "fileDetailsByService": {
-    "shared": [
-      "services/shared/index.js"
-    ]
-  },
+  "changedFiles": [],
+  "fileDetailsByService": {},
   "globalFiles": [],
   "explanations": {
-    "auth": "Included in full rebuild: Shared core utility package was modified (full rebuild fallback)",
-    "notifications": "Included in full rebuild: Shared core utility package was modified (full rebuild fallback)",
-    "payments": "Included in full rebuild: Shared core utility package was modified (full rebuild fallback)",
-    "search": "Included in full rebuild: Shared core utility package was modified (full rebuild fallback)",
-    "shared": "Directly modified in git diff (1 file(s))"
+    "api": "Included in full rebuild: Missing or invalid git diff base ref 'non-existent-branch-999' (new branch or force push)",
+    "auth": "Included in full rebuild: Missing or invalid git diff base ref 'non-existent-branch-999' (new branch or force push)",
+    "notifications": "Included in full rebuild: Missing or invalid git diff base ref 'non-existent-branch-999' (new branch or force push)",
+    "payments": "Included in full rebuild: Missing or invalid git diff base ref 'non-existent-branch-999' (new branch or force push)",
+    "search": "Included in full rebuild: Missing or invalid git diff base ref 'non-existent-branch-999' (new branch or force push)",
+    "shared": "Included in full rebuild: Missing or invalid git diff base ref 'non-existent-branch-999' (new branch or force push)"
   },
   "impactPaths": {
+    "api": [
+      "root",
+      "api"
+    ],
     "auth": [
-      "shared",
+      "root",
       "auth"
     ],
     "notifications": [
-      "shared",
+      "root",
       "notifications"
     ],
     "payments": [
-      "shared",
+      "root",
       "payments"
     ],
     "search": [
-      "shared",
+      "root",
       "search"
     ],
     "shared": [
+      "root",
       "shared"
     ]
   },
   "metrics": {
-    "affectedCount": 5,
+    "affectedCount": 6,
     "skippedCount": 0,
     "percentSaved": 0,
     "estimatedTimeSavedMinutes": 0,
-    "estimatedActualTimeMinutes": 12.5,
-    "estimatedTotalTimeMinutes": 12.5
+    "estimatedActualTimeMinutes": 15,
+    "estimatedTotalTimeMinutes": 15
   }
 }

@@ -1,252 +1,372 @@
-# 💥 BlastRadius: Dependency-Graph-Based Selective CI Testing for Monorepos
+# 💥 BlastRadius 2.0: Selective Monorepo CI/CD & Distributed Container Infrastructure
 
-[![CI Status](https://img.shields.io/badge/CI-Selective%20Matrix-blueviolet?style=for-the-badge&logo=githubactions)](https://github.com)
+[![CI Status](https://img.shields.io/badge/CI-Selective%20Matrix%202.0-blueviolet?style=for-the-badge&logo=githubactions)](https://github.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Node Version](https://img.shields.io/badge/Node.js-v22+-green.svg?style=for-the-badge&logo=node.js)](https://nodejs.org)
-[![AST Engine](https://img.shields.io/badge/AST%20Engine-@babel/parser-orange.svg?style=for-the-badge&logo=babel)](https://babeljs.io)
+[![Docker](https://img.shields.io/badge/Docker-Compose%20v2-2496ED.svg?style=for-the-badge&logo=docker)](https://docker.com)
+[![Prometheus](https://img.shields.io/badge/Monitoring-Prometheus-E6522C.svg?style=for-the-badge&logo=prometheus)](https://prometheus.io)
+[![Grafana](https://img.shields.io/badge/Dashboards-Grafana-F46800.svg?style=for-the-badge&logo=grafana)](https://grafana.com)
 
-**BlastRadius** is an intelligent, dependency-graph-driven selective CI testing engine for poly-service monorepos. It eliminates redundant test runs by computing the precise direct and transitive "blast radius" of any git changeset—dynamically triggering containerized test matrices **only** for affected services while safely skipping unaffected modules.
+**BlastRadius 2.0** connects static AST dependency analysis and reverse breadth-first search (BFS) selective CI testing to a production-grade, containerized infrastructure: an Express API cluster with deterministic replica identity, Redis distributed caching with graceful offline degradation, NGINX round-robin load balancing with passive failover, provisioned Prometheus/Grafana observability, an automated GitHub Actions matrix pipeline, and optional AWS ECS Fargate deployment via Terraform.
+
+- **Repository:** [https://github.com/GOVINDRAJ17/BlastRadius](https://github.com/GOVINDRAJ17/BlastRadius)
+- **Production Dashboard:** [https://blastradius-dashboard-ctxdz9bwe.vercel.app](https://blastradius-dashboard-ctxdz9bwe.vercel.app)
 
 ---
 
 ## 📑 Table of Contents
-- [1. The Problem Statement](#1-the-problem-statement)
-- [2. Architectural Overview](#2-architectural-overview)
-- [3. Demo Monorepo Topology](#3-demo-monorepo-topology)
-- [4. Quick Start & Local Setup](#4-quick-start--local-setup)
-- [5. Worked Walkthroughs](#5-worked-walkthroughs)
-  - [Scenario A: Changing `search`](#scenario-a-changing-search-isolated)
-  - [Scenario B: Changing `auth`](#scenario-b-changing-auth-transitive-propagation)
-  - [Scenario C: Changing `shared`](#scenario-c-changing-shared-full-rebuild-fallback)
-- [6. Dynamic GitHub Actions Matrix Workflow](#6-dynamic-github-actions-matrix-workflow)
-- [7. Interactive Visualization Dashboard](#7-interactive-visualization-dashboard)
-- [8. Metrics & Historical Savings](#8-metrics--historical-savings)
-- [9. Trade-offs & Known Limitations](#9-trade-offs--known-limitations)
+1. [Architectural Overview](#1-architectural-overview)
+2. [Technology Stack](#2-technology-stack)
+3. [Deployment-Scope Contract (Phase 1)](#3-deployment-scope-contract-phase-1)
+4. [Monorepo Service Topology](#4-monorepo-service-topology)
+5. [Quick Start & Local Setup](#5-quick-start--local-setup)
+6. [API Service & Distributed Redis Caching](#6-api-service--distributed-redis-caching)
+7. [NGINX Load Balancing & Passive Failover Demo](#7-nginx-load-balancing--passive-failover-demo)
+8. [Prometheus & Grafana Monitoring](#8-prometheus--grafana-monitoring)
+9. [GitHub Actions Dynamic CI/CD Pipeline](#9-github-actions-dynamic-cicd-pipeline)
+10. [Optional Cloud Deployment (AWS ECS via Terraform)](#10-optional-cloud-deployment-aws-ecs-via-terraform)
+11. [Dashboard & Data-Source Indicators](#11-dashboard--data-source-indicators)
+12. [Troubleshooting & Verification](#12-troubleshooting--verification)
 
 ---
 
-## 1. The Problem Statement
-
-In standard monorepo setups, CI pipelines trigger full builds and runs for every service on every commit or PR. 
-
-### The Naive CI Anti-Pattern:
-Consider a monorepo with 5 microservices, each requiring ~2.5 minutes for Docker image assembly and test suite execution:
-- An engineer modifies a typo in `services/search/index.js` (an independent, standalone service).
-- **Naive CI Action**: Builds and runs Docker test suites for `auth`, `payments`, `notifications`, `search`, and `shared`.
-- **Total Duration**: ~12.5 CPU minutes per push.
-- **Wasted Time**: **80% of CI compute was completely wasted** re-verifying services that could not possibly be impacted by the change.
-
-### The BlastRadius Solution:
-BlastRadius parses the monorepo's abstract syntax tree (AST), extracts literal import/require dependencies, constructs bidirectional dependency graphs, and executes a breadth-first search (BFS) on the reverse dependency graph from changed files. Only services in the active blast radius are tested.
-
----
-
-## 2. Architectural Overview
+## 1. Architectural Overview
 
 ```mermaid
 flowchart TD
-    A["Git Diff (git diff --name-only base...head)"] --> B["File-to-Service Mapper"]
-    C["Services Source Files (.js, .ts)"] --> D["Babel AST Parser (@babel/parser)"]
-    D --> E["Dependency Graph Builder (build-graph.js)"]
-    E --> F["dependency-graph.json\n(Forward & Reverse Adjacency Lists)"]
-    
-    B --> G["Blast Radius Engine (compute-blast-radius.js)"]
-    F --> G
-    
-    G --> H{"Shared Core or Root Config Changed?"}
-    H -- "YES" --> I["Full Rebuild Fallback\n(Mark ALL services affected)"]
-    H -- "NO" --> J["BFS Reverse Graph Traversal\n(Trace Causal Propagation Paths)"]
-    
-    I --> K["blast-radius.json"]
-    J --> K
-    
-    K --> L["GitHub Actions Workflow (.github/workflows/blastradius.yml)"]
-    L --> M["Job 1: compute-scope\n(Outputs JSON array: ['auth', 'payments'])"]
-    M --> N["Job 2: Dynamic Matrix test-affected\n(strategy.matrix.service: fromJson(services))"]
-    M --> O["Automated PR Status Comment & Dashboard Artifact"]
+    subgraph Analysis["1. Selective CI Scope Engine"]
+        A["Git Changeset (git diff)"] --> B["Babel AST Parser (@babel/parser)"]
+        B --> C["Adjacency Graphs (dependency-graph.json)"]
+        C --> D["Reverse BFS Traversal (compute-blast-radius.js)"]
+        D --> E["deployment-scope.json\n(Canonical Contract)"]
+    end
+
+    subgraph CI["2. GitHub Actions CI/CD Pipeline"]
+        E --> F["compute-scope Job"]
+        F --> G["test-affected Matrix (from 'tested')"]
+        G --> H["build-images Matrix (from 'to_build')"]
+        H --> I{"CLOUD_DEPLOY_ENABLED\n== 'true'?"}
+        I -- Yes --> J["cloud-deploy Matrix (from 'to_deploy')\nAWS ECS / ECR"]
+        I -- No (Local) --> K["Local Docker Compose Target"]
+        F --> L["Ingest to API Service (POST /api/reports)"]
+        F --> M["Post PR Status Comment"]
+    end
+
+    subgraph Infra["3. Local Production Infrastructure Stack"]
+        N["Client / Browser / Dashboard"] --> O["NGINX Reverse Proxy (:8080)\n(Round-Robin + Failover)"]
+        O --> P1["api-1 (:4000)"]
+        O --> P2["api-2 (:4000)"]
+        O --> P3["api-3 (:4000)"]
+        P1 & P2 & P3 <--> Q[("Redis Cache (:6379)\nTTLs: 60s runs, 10m graph")]
+    end
+
+    subgraph Observability["4. Observability Stack"]
+        R["Prometheus (:9090)"] -->|Scrapes /metrics| P1 & P2 & P3
+        S["Grafana (:3001)"] -->|Queries datasource| R
+    end
 ```
 
 ---
 
-## 3. Demo Monorepo Topology
+## 2. Technology Stack
 
-The repository contains 5 services under `/services/` with real cross-service module dependencies:
+| Layer | Technologies & Tools |
+| :--- | :--- |
+| **Monorepo Engine** | Node.js 22, `@babel/parser`, `@babel/traverse`, Git CLI, AST graph builder |
+| **API Cluster** | Node.js Express 4, `ioredis`, `prom-client`, `cors`, `express-rate-limit` |
+| **Caching Layer** | Redis 7.2 (Alpine), key namespace `blastradius:<area>:<id>`, cache-aside |
+| **Load Balancer** | NGINX 1.25 (Alpine), passive health checks, `proxy_next_upstream` retry |
+| **Observability** | Prometheus v2.51, Grafana 10.4 (provisioned datasources & dashboards) |
+| **Container Runtime** | Docker Engine 28, Docker Compose v2, Alpine-based Node 22 images |
+| **CI/CD** | GitHub Actions with dynamic matrix strategy (`fromJson`), OIDC AWS auth |
+| **Cloud IaC (Optional)**| Terraform 1.7+, AWS ECS Fargate, ECR, Application Load Balancer, ElastiCache |
+| **Database & Dashboard**| Supabase (PostgreSQL), Vercel serverless functions, Vis-Network graph |
 
-| Service | Category | Imports From | Downstream Dependents | Responsibility |
+---
+
+## 3. Deployment-Scope Contract (Phase 1)
+
+All downstream build, test, deploy, and visualization workflows consume a unified, immutable JSON contract: `deployment-scope.json`:
+
+```json
+{
+  "commit_sha": "a1b2c3d...",
+  "base_ref": "master",
+  "changed_files": ["services/auth/index.js"],
+  "changed_services": ["auth"],
+  "directly_affected": ["auth"],
+  "transitively_affected": ["payments", "notifications"],
+  "tested": ["auth", "payments", "notifications"],
+  "to_build": ["auth", "payments", "notifications"],
+  "to_deploy": ["auth", "payments", "notifications"],
+  "skipped": ["api", "search", "shared"],
+  "full_rebuild": false,
+  "full_rebuild_reason": null,
+  "causal_paths": {
+    "auth": "Directly modified in git diff (services/auth/index.js)",
+    "payments": "Tested transitively because payments -> auth",
+    "notifications": "Tested transitively because notifications -> payments -> auth"
+  }
+}
+```
+
+### Scope Invariants
+1. **Single Source of Truth**: `to_build` and `to_deploy` are strictly derived from the same affected set (`tested`). Logic is never duplicated across jobs.
+2. **Deterministic Full Rebuild**: Triggered if `services/shared/` or root files (`package.json`, root Dockerfiles) are touched, or if the git diff base ref cannot be resolved.
+3. **Empty-Set Handling**: If non-service files (e.g. documentation) change, `tested: []` and `has_affected: false` prevent matrix failures.
+
+---
+
+## 4. Monorepo Service Topology
+
+```
+                  [shared] (core utility)
+                 /    |    \
+                /     |     \
+               v      v      v
+            [auth]    |      |
+              |       |      |
+              v       v      |
+           [payments]        |
+              |              |
+              v              v
+          [notifications] <--+
+
+          [search] (isolated standalone)
+          [api] (containerized telemetry & report service)
+```
+
+| Service | Category | Dependencies | Downstream Dependents | Responsibility |
 | :--- | :--- | :--- | :--- | :--- |
-| **`shared`** | Core Utility | _None_ | `auth`, `payments`, `notifications` | Shared logging, currency formatting, email regex |
-| **`auth`** | Core Domain | `shared` | `payments` | JWT generation and signature verification |
-| **`payments`** | Core Domain | `auth`, `shared` | `notifications` | Transaction authorization and ledger processing |
-| **`notifications`** | Edge Domain | `payments`, `shared` | _None_ | Payment receipt dispatch & email delivery |
+| **`shared`** | Core Utility | _None_ | `auth`, `payments`, `notifications` | Currency formatting, email regex, structured logger |
+| **`auth`** | Core Domain | `shared` | `payments` | JWT generation and cryptographic verification |
+| **`payments`**| Core Domain | `auth`, `shared` | `notifications` | Transaction authorization and ledger processing |
+| **`notifications`**| Edge Domain | `payments`, `shared` | _None_ | Payment receipt dispatch & email delivery |
 | **`search`** | Standalone | _None_ | _None_ | Product catalog query engine & indexer |
-
-### Structural Dependency Graph:
-```
-           [shared] (core utility)
-          /   |   \
-         /    |    \
-        v     v     v
-     [auth]   |      |
-       |      |      |
-       v      v      |
-    [payments]       |
-       |             |
-       v             v
-    [notifications] <+
-    
-    [search] (isolated)
-```
+| **`api`** | Telemetry / CI | _None_ | Monorepo consumers | Health, metrics, runs cache, report ingestion |
 
 ---
 
-## 4. Quick Start & Local Setup
+## 5. Quick Start & Local Setup
 
 ### Prerequisites
-- Node.js >= 22.0.0
-- Git
+- **Node.js** >= 22.0.0
+- **Docker Desktop** (with Compose v2)
+- **PowerShell** (Windows) or **bash** (Linux/macOS)
 
-### 1. Install Monorepo Root Dependencies
-```bash
+### 1. Clone & Install
+```powershell
+git clone https://github.com/GOVINDRAJ17/BlastRadius.git
+cd BlastRadius
 npm install
 ```
 
-### 2. Run All Service Unit Tests Locally
-All services use Node.js built-in zero-dependency test runner (`node:test`):
-```bash
+### 2. Run All Monorepo Unit Tests (Zero External Dependencies)
+```powershell
 npm run test:all
 ```
+*Executes all 24 native tests across `services/*/test/*.test.js`.*
 
-### 3. Generate Static AST Dependency Graph
-Statically analyzes imports across all services and outputs `dependency-graph.json`:
-```bash
+### 3. Build Dependency Graph & Compute Blast Radius
+```powershell
+# Generate static AST dependency graph
 npm run graph
-```
 
-### 4. Compute Blast Radius
-Computes affected services from git changes (or pass `--files` or `--base`/`--head`):
-```bash
-# Test with simulated git diff:
+# Test simulated changes:
+npm run blast-radius -- --files "services/search/index.js"
 npm run blast-radius -- --files "services/auth/index.js"
+npm run blast-radius -- --files "services/shared/index.js"
 ```
 
-### 5. Launch Interactive Dashboard
+### 4. Start Local Containerized Infrastructure
+Ensure Docker Desktop is running, then launch the Compose stack:
+
+```powershell
+# Copy local environment variables template
+Copy-Item .env.example .env
+
+# Build and start all containers in detached mode
+docker compose up -d --build
+```
+
+Verify that all services report healthy status:
+```powershell
+docker compose ps
+```
+
+---
+
+## 6. API Service & Distributed Redis Caching
+
+### Replica Identity Design Choice
+Rather than running generic anonymous scaling (`docker compose up --scale api=3`), BlastRadius explicitly provisions three instances (`api-1`, `api-2`, `api-3`) sharing the identical base image and differing only by an explicit `INSTANCE_ID` environment variable:
+- Guaranteed deterministic replica identification across logs, Prometheus labels, and NGINX `X-Served-By` response headers.
+- Independent heartbeat tracking in Redis (`blastradius:heartbeat:api-N`) allowing fine-grained health inspection.
+
+### API Endpoints Reference
+
+| Method | Path | Auth | Purpose | Response Example |
+| :--- | :--- | :---: | :--- | :--- |
+| `GET` | `/health` | Public | Liveness probe & instance identity | `{"status":"ok","instance_id":"api-1","uptime":120.5}` |
+| `GET` | `/ready` | Public | Readiness probe checking Redis connectivity | `{"ready":true,"redis":"connected"}` |
+| `GET` | `/metrics` | Public | Prometheus text metrics (`prom-client`) | `http_requests_total{instance="api-1"} 42` |
+| `GET` | `/api/runs` | Public | Recent CI runs list (cache-first via Redis) | `{"source":"redis","runs":[...]}` |
+| `GET` | `/api/runs/:id` | Public | Single run details with scope contract | `{"id":"104","scope":{...}}` |
+| `GET` | `/api/infra/status`| Public | Replica heartbeats and container health | `{"active_replicas":3,"replicas":[...]}` |
+| `GET` | `/api/deployments`| Public | Deployment history | `{"deployments":[...]}` |
+| `POST`| `/api/reports` | Bearer | Authenticated ingestion of CI reports | `{"status":"ingested","id":"run-..."}` |
+
+### Resilient Degradation
+The API features automatic fallback: if Redis goes offline or restarts, the API logs a warning, falls back to disk-based JSON reads, and continues serving requests without crashing.
+
+---
+
+## 7. NGINX Load Balancing & Passive Failover Demo
+
+The NGINX reverse proxy (`http://localhost:8080`) load balances incoming HTTP traffic across `api-1`, `api-2`, and `api-3` using a round-robin upstream pool:
+
+```nginx
+upstream api_cluster {
+    server api-1:4000 max_fails=2 fail_timeout=5s;
+    server api-2:4000 max_fails=2 fail_timeout=5s;
+    server api-3:4000 max_fails=2 fail_timeout=5s;
+}
+```
+
+> **Note on NGINX Health Checks:** Open-source NGINX uses passive health monitoring (`max_fails` / `fail_timeout`) triggered during real client traffic. If a replica fails or times out, `proxy_next_upstream` transparently retries the request against the next replica before returning a response, guaranteeing zero 5xx client errors.
+
+### Running the Failover Demo Script
+
+Execute the automated test script to observe live traffic distribution, stop `api-2`, verify seamless failover, and witness self-healing upon restart:
+
+**PowerShell:**
+```powershell
+powershell -File scripts/demo-failover.ps1
+```
+
+**Bash:**
 ```bash
-npm run dashboard
-# Open http://localhost:3000/dashboard/index.html in browser
+chmod +x scripts/demo-failover.sh
+./scripts/demo-failover.sh
 ```
 
----
-
-## 5. Worked Walkthroughs
-
-### Scenario A: Changing `search` (Isolated)
-- **Changed File**: `services/search/index.js`
-- **Reverse Dependencies of search**: `[]`
-- **Blast Radius Result**:
-  - **Directly Changed**: `search`
-  - **Affected Services**: `search`
-  - **Skipped Services**: `auth`, `notifications`, `payments`, `shared`
-  - **CI Time Saved**: **~80% (4 out of 5 services skipped, saving ~10 min)**
-
-### Scenario B: Changing `auth` (Transitive Propagation)
-- **Changed File**: `services/auth/index.js`
-- **Reverse Graph Traversal**:
-  1. `auth` is directly changed.
-  2. `payments` depends on `auth` $\rightarrow$ `payments` is affected.
-  3. `notifications` depends on `payments` $\rightarrow$ `notifications` is affected.
-- **Blast Radius Result**:
-  - **Directly Changed**: `auth`
-  - **Affected Services**: `auth`, `payments`, `notifications`
-  - **Skipped Services**: `search`, `shared`
-  - **Causal Path**: `notifications -> payments -> auth (changed)`
-  - **CI Time Saved**: **~40% (2 out of 5 services skipped, saving ~5 min)**
-
-### Scenario C: Changing `shared` (Full Rebuild Fallback)
-- **Changed File**: `services/shared/index.js`
-- **Fallback Rule**: Because `shared` provides cross-cutting foundational logic, any change triggers a safety fallback.
-- **Blast Radius Result**:
-  - **Directly Changed**: `shared`
-  - **Affected Services**: `auth`, `notifications`, `payments`, `search`, `shared` (All 5 services)
-  - **Skipped Services**: `0`
-  - **CI Time Saved**: **0% (100% full rebuild triggered safely)**
+**Demo Workflow:**
+1. Sends 30 requests to `http://localhost:8080/health` and tallies `X-Served-By` headers across `api-1`, `api-2`, and `api-3` (~10 requests each).
+2. Executes `docker compose stop api-2`.
+3. Sends 30 subsequent requests. Confirms **zero 5xx errors** and verifies traffic distributes exclusively between `api-1` and `api-3` (~15 requests each).
+4. Inspects `/api/infra/status` confirming `api-2` is marked offline.
+5. Executes `docker compose start api-2` and verifies it automatically resumes receiving traffic.
 
 ---
 
-## 6. Dynamic GitHub Actions Matrix Workflow
+## 8. Prometheus & Grafana Monitoring
 
-The workflow file [`.github/workflows/blastradius.yml`](file:///.github/workflows/blastradius.yml) executes a two-job strategy:
+### Prometheus Setup
+- Accessible at: **`http://localhost:9090`**
+- Scrapes `/metrics` from all three API replicas every 5 seconds.
+- Exposed metrics:
+  - `http_requests_total` (labels: `method`, `route`, `status_code`, `instance`)
+  - `http_request_duration_seconds` (latency histogram with p50, p90, p95, p99 quantiles)
+  - `ci_runs_total` (counter of processed CI runs)
+
+### Provisioned Grafana Dashboard
+- Accessible at: **`http://localhost:3001`**
+- Default credentials: `admin` / `admin` (change prompted on first login).
+- Fully automated file-based provisioning (`infrastructure/grafana/provisioning/`):
+  - Pre-configured Prometheus datasource (`http://prometheus:9090`).
+  - Pre-loaded **"BlastRadius 2.0 - System & Infrastructure Overview"** dashboard:
+    - **Request Rate by Instance**: Real-time stacked ops/sec across replicas.
+    - **p95 Latency**: 95th-percentile response time.
+    - **5xx Error Rate**: Monitored failover indicator.
+    - **Healthy Replicas Count**: Instant `up` gauge.
+    - **Total CI Runs Ingested**: Lifetime run counter.
+
+---
+
+## 9. GitHub Actions Dynamic CI/CD Pipeline
+
+The workflow [`.github/workflows/blastradius.yml`](file:///.github/workflows/blastradius.yml) executes four distinct phases:
 
 1. **`compute-scope`**:
-   - Checks out the repository with `fetch-depth: 0` to preserve complete git history.
+   - Performs a complete git diff (`fetch-depth: 0`).
    - Runs `build-graph.js` and `compute-blast-radius.js`.
-   - Exports the affected services as a JSON array string directly to `$GITHUB_OUTPUT`:
-     ```bash
-     echo "services=[\"auth\",\"payments\",\"notifications\"]" >> $GITHUB_OUTPUT
-     ```
-   - Posts a rich markdown comment on the pull request with a complete impact table and time-saved metrics.
-
+   - Generates and uploads `deployment-scope.json` as a build artifact.
+   - Ingests the report into the API service via authenticated `POST /api/reports`.
+   - Publishes an impact summary comment directly onto the pull request.
 2. **`test-affected`**:
-   - Uses GitHub Actions' dynamic matrix feature:
+   - Dynamically spawns parallel Docker test containers **only** for services in `tested`:
      ```yaml
      strategy:
        matrix:
-         service: ${{ fromJson(needs.compute-scope.outputs.services) }}
+         service: ${{ fromJson(needs.compute-scope.outputs.tested) }}
      ```
-   - Dynamically spawns parallel runners **only** for the affected services:
-     ```bash
-     docker build -t blastradius-${{ matrix.service }}:latest -f services/${{ matrix.service }}/Dockerfile .
-     docker run --rm blastradius-${{ matrix.service }}:latest
-     ```
+   - Guarded by `if: needs.compute-scope.outputs.has_affected == 'true'` so empty changesets skip gracefully.
+3. **`build-images`**:
+   - Builds production images tagged with the full commit SHA (`${{ github.sha }}`) **only** for services in `to_build`.
+4. **`cloud-deploy`**:
+   - Deploys **only** services in `to_deploy` to AWS ECS Fargate via OIDC auth.
+   - Gated by `if: vars.CLOUD_DEPLOY_ENABLED == 'true'`.
 
 ---
 
-## 7. Interactive Visualization Dashboard
+## 10. Optional Cloud Deployment (AWS ECS via Terraform)
 
-BlastRadius includes an interactive visualization dashboard located at [`dashboard/index.html`](file:///dashboard/index.html):
+To maintain a strict local-first architecture, all cloud resources are **optional** and gated by configuration (`CLOUD_DEPLOY_ENABLED=false`).
 
-- **Interactive Topology**: Vis-Network directed graph with physics simulation.
-- **State-Based Node Coloring**:
-  - 🔴 **Crimson**: Directly changed service (root cause).
-  - 🟠 **Amber**: Transitively affected service (rebuild & test required).
-  - ⚪ **Charcoal/Gray**: Safely skipped service.
-  - 🔷 **Cyan Hexagon**: Core shared package.
-- **Real-Time Scenario Simulator**: Test and toggle between scopes (`Current Diff`, `auth changed`, `search changed`, `shared changed`) on the fly.
-- **Service Inspector**: Click any node to reveal exact dependency chains, callers, and causal impact reasons.
-- **History Ledger**: Track cumulative CI compute minutes saved across runs and PRs.
+Complete Infrastructure-as-Code definitions are located in [`infrastructure/terraform/`](file:///infrastructure/terraform/):
+- **`main.tf`**: AWS VPC, ECS Fargate cluster, Amazon ECR repositories, Application Load Balancer (ALB), ElastiCache Redis replication group, and CloudWatch Log Groups.
+- **`variables.tf`**: Configurable parameters (`aws_region`, `environment`, `vpc_cidr`).
+- **`outputs.tf`**: ALB DNS name, ECR repository URLs, and ECS cluster ID.
 
----
-
-## 8. Metrics & Historical Savings
-
-BlastRadius records every CI invocation into [`metrics-history.json`](file:///metrics-history.json) via `record-metrics.js`:
-
-| Run ID | Branch | Direct Change | Tested Count | Skipped Count | % Saved | Compute Saved |
-| :--- | :--- | :--- | :---: | :---: | :---: | :---: |
-| `#101` | `feature/search-filter` | `search` | 1 | 4 | **80%** | **+10.0m** |
-| `#102` | `fix/token-expiry` | `auth` | 3 | 2 | **40%** | **+5.0m** |
-| `#103` | `feature/payment-webhook` | `payments` | 2 | 3 | **60%** | **+7.5m** |
-| `#104` | `perf/email-digest` | `notifications` | 1 | 4 | **80%** | **+10.0m** |
-| **Total** | **Cumulative CI Impact** | - | - | - | **65% Avg** | **~32.5 mins** |
+### Deploying to AWS (When Enabled)
+```powershell
+cd infrastructure/terraform
+terraform init
+terraform plan -out=tfplan
+terraform apply tfplan
+```
 
 ---
 
-## 9. Trade-offs & Known Limitations
+## 11. Dashboard & Data-Source Indicators
 
-1. **Dynamic / Runtime Coupling**:
-   - *Limitation*: Static AST analysis detects code-level `import` and `require` references. It does not automatically detect runtime network coupling (e.g. dynamic HTTP REST endpoints or gRPC URLs read from environment variables).
-   - *Mitigation*: Contract testing, OpenAPI schemas, or explicit service metadata files can declare synthetic dependencies for runtime RPCs.
+The BlastRadius dashboard at [`dashboard/index.html`](file:///dashboard/index.html) or [live on Vercel](https://blastradius-dashboard-ctxdz9bwe.vercel.app) displays real-time telemetry, interactive dependency topology, and Phase 1 scope contracts.
 
-2. **Non-Code / Config Changes**:
-   - *Design Choice*: If root files like `package.json`, `package-lock.json`, or root docker configurations change, BlastRadius triggers the safety fallback to rebuild all services.
+### Data-Source Labeling Standard
+In adherence to the **Real Data Only** constraint, every card and value on the dashboard is explicitly marked:
 
-3. **Multi-Language Monorepos**:
-   - *Current Scope*: This implementation uses `@babel/parser` for JavaScript and TypeScript (`.js`, `.ts`, `.jsx`, `.tsx`, `.mjs`, `.cjs`).
-   - *Extensibility*: Additional language parsers (e.g. `ast` module for Python, `go/parser` for Go) can easily emit edges into the standard `dependency-graph.json` format.
+| Badge / Label | Meaning |
+| :--- | :--- |
+| **`LIVE API (DOCKER)`** | Data queried live from local Compose API (`http://localhost:8080/api/infra/status`). |
+| **`CONTRACT / LAST-RUN`** | Real historical data from the most recent git changeset or CI run artifact. |
+| **`SIMULATED`** | Interactive demo scenario fixture (e.g. `auth changed`, `search changed`). Clearly labeled in the selector and banners. |
+| **`UNAVAILABLE`** | Live backend or container metrics are unreachable or offline. No fabricated numbers are displayed. |
 
-4. **Git History Availability**:
-   - *Requirement*: Shallow clones (`fetch-depth: 1`) do not contain base refs for three-dot diffs (`git diff origin/main...HEAD`). BlastRadius configures `fetch-depth: 0` in GitHub Actions to ensure diff accuracy.
+### Savings Formula
+$$\text{Time Saved (minutes)} = (\text{Total Services} - \text{Tested Services}) \times 2.5\text{ minutes}$$
 
 ---
 
-## License
-MIT License. Created for monorepo efficiency and developer velocity.
+## 12. Troubleshooting & Verification
+
+### Common Issues & Solutions
+
+1. **Windows CRLF Line Endings**:
+   - *Problem*: Linux containers fail with `\r: command not found` when executing shell scripts or reading NGINX configurations.
+   - *Solution*: `infrastructure/nginx/nginx.conf` and `scripts/demo-failover.sh` are saved with Unix LF line endings. Git handles this via `.gitattributes`.
+
+2. **Docker Desktop Engine Named Pipe Access**:
+   - *Problem*: `error during connect: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified`.
+   - *Solution*: Start Docker Desktop from the Windows Start Menu and ensure the engine has completed initializing before running `docker compose up`.
+
+3. **Port Conflicts**:
+   - `8080` (NGINX Proxy), `9090` (Prometheus), `3001` (Grafana), `4000` (Local API dev).
+   - If a port is occupied by another local service, change the mapped host port in `docker-compose.yml`.
+
+4. **Redis Cache Offline**:
+   - The Express API automatically recovers when Redis is offline and logs a warning. Restart Redis with `docker compose restart redis`.
+
+---
+
+## 📄 License
+MIT License. Built for engineering rigor, monorepo performance, and developer velocity.
