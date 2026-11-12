@@ -49,6 +49,13 @@ function parseArgs() {
   return { base, head, simulatedChangedFiles };
 }
 
+const ROOT_REBUILD_CONFIGS = new Set([
+  'package.json',
+  'package-lock.json',
+  'docker-compose.yml',
+  'docker-compose.prod.yml',
+]);
+
 const IGNORED_DIFF_PATTERNS = new Set([
   'dependency-graph.json',
   'blast-radius.json',
@@ -58,7 +65,6 @@ const IGNORED_DIFF_PATTERNS = new Set([
   'dashboard/blast-radius.json',
   'dashboard/deployment-scope.json',
   'dashboard/metrics-history.json',
-  'package-lock.json',
   '.gitignore'
 ]);
 
@@ -247,13 +253,14 @@ function computeBlastRadius(graph, changedFiles, options = {}) {
       impactPaths[svc] = ['root', svc];
     }
   }
-  // Case 1: Shared core package modified OR root config/lockfile changed
-  else if (changedServices.includes('shared') || globalFiles.some(f => f === 'package.json' || f === 'package-lock.json')) {
+  // Case 1: Shared core package modified OR root runtime configuration changed
+  else if (changedServices.includes('shared') || globalFiles.some(f => ROOT_REBUILD_CONFIGS.has(f))) {
     full_rebuild = true;
     const isShared = changedServices.includes('shared');
+    const matchedRootConfig = globalFiles.find(f => ROOT_REBUILD_CONFIGS.has(f));
     full_rebuild_reason = isShared
       ? 'Shared core utility package was modified (full rebuild fallback)'
-      : 'Root package/dependency manifest modified (full rebuild fallback)';
+      : `Root runtime configuration modified: ${matchedRootConfig} (full rebuild fallback)`;
 
     for (const svc of applicationServices) {
       affectedServicesSet.add(svc);
@@ -473,6 +480,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  ROOT_REBUILD_CONFIGS,
   parseArgs,
   getChangedFiles,
   mapFileToService,

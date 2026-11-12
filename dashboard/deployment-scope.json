@@ -1,47 +1,19 @@
 {
-  "commit_sha": "537c60ab04ecd9150221c8770229f0af38e0a0e4",
-  "base_ref": "HEAD",
+  "commit_sha": "7ac140aace4b61696fbf6050ebddb1b2740b3299",
+  "base_ref": null,
   "changed_files": [
-    ".gitattributes",
-    "build-graph.js",
-    "compute-blast-radius.js",
-    "dashboard/app.js",
-    "infrastructure/terraform/main.tf",
-    "infrastructure/terraform/outputs.tf",
-    "infrastructure/terraform/variables.tf",
-    "services/api/index.js",
-    "services/api/package.json",
-    "services/api/test/index.test.js",
-    "services/auth/package.json",
-    "services/notifications/package.json",
-    "services/payments/package.json",
-    "services/search/index.js",
-    "services/search/package.json",
-    "services/search/test/index.test.js",
-    "services/shared/package.json",
-    "infrastructure/terraform/terraform.tfvars.example",
-    "services/api/validator.js"
+    "docker-compose.yml"
   ],
-  "changed_services": [
-    "api",
+  "changed_services": [],
+  "directly_affected": [],
+  "transitively_affected": [
     "auth",
     "notifications",
     "payments",
     "search",
     "shared"
   ],
-  "directly_affected": [
-    "shared"
-  ],
-  "transitively_affected": [
-    "api",
-    "auth",
-    "notifications",
-    "payments",
-    "search"
-  ],
   "tested": [
-    "api",
     "auth",
     "notifications",
     "payments",
@@ -49,7 +21,6 @@
     "shared"
   ],
   "to_build": [
-    "api",
     "auth",
     "notifications",
     "payments",
@@ -57,7 +28,6 @@
     "shared"
   ],
   "to_deploy": [
-    "api",
     "auth",
     "notifications",
     "payments",
@@ -66,24 +36,26 @@
   ],
   "skipped": [],
   "full_rebuild": true,
-  "full_rebuild_reason": "Shared core utility package was modified (full rebuild fallback)",
+  "full_rebuild_reason": "Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
   "causal_paths": {
-    "api": [
-      "api"
-    ],
     "auth": [
+      "root",
       "auth"
     ],
     "notifications": [
+      "root",
       "notifications"
     ],
     "payments": [
+      "root",
       "payments"
     ],
     "search": [
+      "root",
       "search"
     ],
     "shared": [
+      "root",
       "shared"
     ]
   }

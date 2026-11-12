@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "generatedAt": "2026-11-12T18:10:10.275Z",
+  "version": "2.0.0",
+  "generatedAt": "2026-11-12T18:11:44.413Z",
   "nodes": [
     "api",
     "auth",
@@ -9,6 +9,24 @@
     "search",
     "shared"
   ],
+  "applicationServices": [
+    "auth",
+    "notifications",
+    "payments",
+    "search",
+    "shared"
+  ],
+  "infrastructureServices": [
+    "api"
+  ],
+  "categories": {
+    "api": "infrastructure",
+    "auth": "application",
+    "notifications": "application",
+    "payments": "application",
+    "search": "application",
+    "shared": "application"
+  },
   "serviceStats": {
     "api": {
       "filesParsed": 3,

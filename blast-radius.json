@@ -1,47 +1,20 @@
 {
-  "commit_sha": "537c60ab04ecd9150221c8770229f0af38e0a0e4",
-  "base_ref": "HEAD",
+  "commit_sha": "7ac140aace4b61696fbf6050ebddb1b2740b3299",
+  "base_ref": null,
   "changed_files": [
-    ".gitattributes",
-    "build-graph.js",
-    "compute-blast-radius.js",
-    "dashboard/app.js",
-    "infrastructure/terraform/main.tf",
-    "infrastructure/terraform/outputs.tf",
-    "infrastructure/terraform/variables.tf",
-    "services/api/index.js",
-    "services/api/package.json",
-    "services/api/test/index.test.js",
-    "services/auth/package.json",
-    "services/notifications/package.json",
-    "services/payments/package.json",
-    "services/search/index.js",
-    "services/search/package.json",
-    "services/search/test/index.test.js",
-    "services/shared/package.json",
-    "infrastructure/terraform/terraform.tfvars.example",
-    "services/api/validator.js"
+    "docker-compose.yml"
   ],
-  "changed_services": [
-    "api",
+  "changed_services": [],
+  "changed_infrastructure": [],
+  "directly_affected": [],
+  "transitively_affected": [
     "auth",
     "notifications",
     "payments",
     "search",
     "shared"
   ],
-  "directly_affected": [
-    "shared"
-  ],
-  "transitively_affected": [
-    "api",
-    "auth",
-    "notifications",
-    "payments",
-    "search"
-  ],
   "tested": [
-    "api",
     "auth",
     "notifications",
     "payments",
@@ -49,7 +22,6 @@
     "shared"
   ],
   "to_build": [
-    "api",
     "auth",
     "notifications",
     "payments",
@@ -57,7 +29,6 @@
     "shared"
   ],
   "to_deploy": [
-    "api",
     "auth",
     "notifications",
     "payments",
@@ -66,42 +37,36 @@
   ],
   "skipped": [],
   "full_rebuild": true,
-  "full_rebuild_reason": "Shared core utility package was modified (full rebuild fallback)",
+  "full_rebuild_reason": "Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
   "causal_paths": {
-    "api": [
-      "api"
-    ],
     "auth": [
+      "root",
       "auth"
     ],
     "notifications": [
+      "root",
       "notifications"
     ],
     "payments": [
+      "root",
       "payments"
     ],
     "search": [
+      "root",
       "search"
     ],
     "shared": [
+      "root",
       "shared"
     ]
   },
-  "timestamp": "2026-11-12T18:10:10.549Z",
-  "commitSha": "537c60a",
+  "timestamp": "2026-11-12T18:11:44.622Z",
+  "commitSha": "7ac140a",
   "branch": "master",
-  "commitMessage": "feat(grafana): enable anonymous admin access to view BlastRadius dashboards instantly",
-  "totalServices": 6,
-  "changedServices": [
-    "api",
-    "auth",
-    "notifications",
-    "payments",
-    "search",
-    "shared"
-  ],
+  "commitMessage": "chore(hardening): classify api service as infrastructure, enforce report invariants, and gate terraform",
+  "totalServices": 5,
+  "changedServices": [],
   "affectedServices": [
-    "api",
     "auth",
     "notifications",
     "payments",
@@ -110,95 +75,47 @@
   ],
   "skippedServices": [],
   "changedFiles": [
-    ".gitattributes",
-    "build-graph.js",
-    "compute-blast-radius.js",
-    "dashboard/app.js",
-    "infrastructure/terraform/main.tf",
-    "infrastructure/terraform/outputs.tf",
-    "infrastructure/terraform/variables.tf",
-    "services/api/index.js",
-    "services/api/package.json",
-    "services/api/test/index.test.js",
-    "services/auth/package.json",
-    "services/notifications/package.json",
-    "services/payments/package.json",
-    "services/search/index.js",
-    "services/search/package.json",
-    "services/search/test/index.test.js",
-    "services/shared/package.json",
-    "infrastructure/terraform/terraform.tfvars.example",
-    "services/api/validator.js"
+    "docker-compose.yml"
   ],
-  "fileDetailsByService": {
-    "api": [
-      "services/api/index.js",
-      "services/api/package.json",
-      "services/api/test/index.test.js",
-      "services/api/validator.js"
-    ],
-    "auth": [
-      "services/auth/package.json"
-    ],
-    "notifications": [
-      "services/notifications/package.json"
-    ],
-    "payments": [
-      "services/payments/package.json"
-    ],
-    "search": [
-      "services/search/index.js",
-      "services/search/package.json",
-      "services/search/test/index.test.js"
-    ],
-    "shared": [
-      "services/shared/package.json"
-    ]
-  },
+  "fileDetailsByService": {},
   "globalFiles": [
-    ".gitattributes",
-    "build-graph.js",
-    "compute-blast-radius.js",
-    "dashboard/app.js",
-    "infrastructure/terraform/main.tf",
-    "infrastructure/terraform/outputs.tf",
-    "infrastructure/terraform/variables.tf",
-    "infrastructure/terraform/terraform.tfvars.example"
+    "docker-compose.yml"
   ],
   "explanations": {
-    "api": "Directly modified in git diff (4 file(s))",
-    "auth": "Directly modified in git diff (1 file(s))",
-    "notifications": "Directly modified in git diff (1 file(s))",
-    "payments": "Directly modified in git diff (1 file(s))",
-    "search": "Directly modified in git diff (3 file(s))",
-    "shared": "Directly modified in git diff (1 file(s))"
+    "auth": "Included in full rebuild: Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
+    "notifications": "Included in full rebuild: Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
+    "payments": "Included in full rebuild: Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
+    "search": "Included in full rebuild: Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
+    "shared": "Included in full rebuild: Root runtime configuration modified: docker-compose.yml (full rebuild fallback)"
   },
   "impactPaths": {
-    "api": [
-      "api"
-    ],
     "auth": [
+      "root",
       "auth"
     ],
     "notifications": [
+      "root",
       "notifications"
     ],
     "payments": [
+      "root",
       "payments"
     ],
     "search": [
+      "root",
       "search"
     ],
     "shared": [
+      "root",
       "shared"
     ]
   },
   "metrics": {
-    "affectedCount": 6,
+    "affectedCount": 5,
     "skippedCount": 0,
     "percentSaved": 0,
     "estimatedTimeSavedMinutes": 0,
-    "estimatedActualTimeMinutes": 15,
-    "estimatedTotalTimeMinutes": 15
+    "estimatedActualTimeMinutes": 12.5,
+    "estimatedTotalTimeMinutes": 12.5
   }
 }
