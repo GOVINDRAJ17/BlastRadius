@@ -1315,3 +1315,110 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================================
+   Phase D: Interaction Styles (Click-to-Copy, Keyboard Hints, Focus Animations)
+   ============================================================================ */
+
+/* Keyboard Shortcut Hints */
+kbd {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.28);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  color: var(--text-muted);
+  display: inline-block;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.tab-link kbd.tab-kbd {
+  margin-left: 0.4rem;
+  font-size: 0.62rem;
+  opacity: 0.7;
+}
+
+.tab-link:hover kbd.tab-kbd,
+.tab-link.active kbd.tab-kbd {
+  opacity: 1;
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+}
+
+.btn kbd.btn-kbd {
+  margin-left: 0.35rem;
+  font-size: 0.65rem;
+  background: rgba(0, 0, 0, 0.35);
+  color: #94a3b8;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.keyboard-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.keyboard-legend span {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Click-to-Copy Elements */
+.clickable-copy {
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.clickable-copy:hover {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.clickable-copy.copied,
+.copy-btn.copied {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+.copy-btn {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-secondary);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #f8fafc;
+}
+
+/* Inspector Pulse Animation */
+@keyframes inspector-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); border-color: #38bdf8; }
+  60% { box-shadow: 0 0 0 8px rgba(56, 189, 248, 0); border-color: rgba(56, 189, 248, 0.4); }
+  100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); border-color: var(--border-color); }
+}
+
+.inspector-highlight {
+  animation: inspector-pulse 1.2s ease-out;
+}
+

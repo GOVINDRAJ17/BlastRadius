@@ -675,6 +675,15 @@ async function loadInfraStatus() {
             }
           });
         }
+
+        const lbCard = document.querySelector('#tab-load-balancer .infra-card');
+        if (lbCard) {
+          lbCard.setAttribute('title',
+            `[Source: LIVE]\n` +
+            `Formula: traffic_share(api_i) = requests(api_i) / total_requests × 100%\n` +
+            `Raw Inputs: api-1=${counts['api-1'] || 0}, api-2=${counts['api-2'] || 0}, api-3=${counts['api-3'] || 0}, total=${total}`
+          );
+        }
       }
 
       return;
@@ -979,6 +988,15 @@ async function loadContainerMetrics() {
 
       if (contentEl) contentEl.style.display = 'block';
       if (unavailEl) unavailEl.style.display = 'none';
+
+      const cardContainers = document.getElementById('card-container-metrics');
+      if (cardContainers) {
+        cardContainers.setAttribute('title',
+          `[Source: LIVE]\n` +
+          `Formula: Queried via Docker Engine API from /api/containers\n` +
+          `Raw Inputs: ${(data.containers || []).length} Compose containers inspected`
+        );
+      }
 
       updateSelectedContainerView();
       return;
@@ -1320,6 +1338,50 @@ function renderStats() {
   document.getElementById('stat-saved').textContent = savings.pctText;
   document.getElementById('stat-saved-mins').textContent = savings.minsText;
 
+  // Tooltips for 5 Stat Cards (Phase D: source label, exact formula, raw inputs)
+  const sourceLabel = isSimulated ? 'SEEDED' : 'LAST RUN';
+  const cardTotal = document.querySelector('.stat-card.total');
+  const cardChanged = document.querySelector('.stat-card.changed');
+  const cardAffected = document.querySelector('.stat-card.affected');
+  const cardSkipped = document.querySelector('.stat-card.skipped');
+  const cardSaved = document.querySelector('.stat-card.saved');
+
+  if (cardTotal) {
+    cardTotal.setAttribute('title',
+      `[Source: ${sourceLabel}]\n` +
+      `Formula: Monorepo application services count from AST topology\n` +
+      `Raw Inputs: 5 discovered services [auth, notifications, payments, search, shared] (infrastructure excluded)`
+    );
+  }
+  if (cardChanged) {
+    cardChanged.setAttribute('title',
+      `[Source: ${sourceLabel}]\n` +
+      `Formula: git diff HEAD~1..HEAD matched to service boundaries (runtime files only)\n` +
+      `Raw Inputs: changed_services: [${changedServices.join(', ') || 'none'}], changed_files: [${runtimeFiles.join(', ') || 'none'}]`
+    );
+  }
+  if (cardAffected) {
+    cardAffected.setAttribute('title',
+      `[Source: ${sourceLabel}]\n` +
+      `Formula: Blast radius = directly_affected ∪ transitive_callers(directly_affected)\n` +
+      `Raw Inputs: directly_affected: [${changedServices.join(', ') || 'none'}], transitively_affected: [${affectedServices.filter(s => !changedServices.includes(s)).join(', ') || 'none'}], total tested: ${testedCount}`
+    );
+  }
+  if (cardSkipped) {
+    cardSkipped.setAttribute('title',
+      `[Source: ${sourceLabel}]\n` +
+      `Formula: Total application services (5) − tested (${testedCount})\n` +
+      `Raw Inputs: skipped: [${skippedServices.join(', ') || 'none'}], count: ${skippedServices.length}`
+    );
+  }
+  if (cardSaved) {
+    cardSaved.setAttribute('title',
+      `[Source: ${sourceLabel}]\n` +
+      `Formula: when affected > 0: saved = (5 − tested) × 2.5 min; when affected == 0: 0 min (N/A)\n` +
+      `Raw Inputs: tested: ${testedCount}, skipped: ${skippedServices.length}, baseline: 12.5m, saved: ${savings.minutes.toFixed(1)}m (${savings.pctText})`
+    );
+  }
+
   // Update Top Verdict Line (Phase B requirement 1: "N of 5 services tested, M skipped, ~X min saved.")
   const verdictEl = document.getElementById('verdict-text');
   const verdictSource = document.getElementById('verdict-source-badge');
@@ -1454,6 +1516,14 @@ function selectService(svcName) {
     } catch {}
   }
 
+  // Trigger pulse highlight animation on inspector side-card
+  const inspectorCard = document.getElementById('service-inspector-card');
+  if (inspectorCard) {
+    inspectorCard.classList.remove('inspector-highlight');
+    void inspectorCard.offsetWidth; // Trigger reflow
+    inspectorCard.classList.add('inspector-highlight');
+  }
+
   // Also switch test log tab to this service if available
   if (DOCKER_TEST_LOGS[svcName]) {
     switchLogTab(svcName);
@@ -1574,7 +1644,7 @@ function renderHistory(filterBranch = '') {
         <td><span class="source-pill ${pillClass}">${rowSource}</span></td>
         <td><span class="commit-tag">#${r.prNumber || 'push'}</span></td>
         <td><code>${r.branch || 'main'}</code></td>
-        <td><span class="commit-tag">${r.commitSha || 'local'}</span></td>
+        <td><span class="commit-tag clickable-copy" onclick="copyToClipboard('${r.commitSha || 'local'}', this, '${r.commitSha || 'local'}')" title="Click to copy commit SHA">${r.commitSha || 'local'}</span></td>
         <td><code>${(r.changedServices || []).filter(s => s !== 'api').join(', ') || 'none'}</code></td>
         <td><strong style="color:#fbbf24;">${testedCount}</strong></td>
         <td><strong style="color:#38bdf8;">${skippedCount}</strong></td>
@@ -1594,6 +1664,11 @@ function renderHistory(filterBranch = '') {
   const cumEl = document.getElementById('cumulative-saved-text');
   if (cumEl) {
     cumEl.textContent = `Total Cumulative Savings: ~${cumulativeMinutes.toFixed(1)} CI minutes saved across ${runs.length} runs`;
+    cumEl.setAttribute('title',
+      `[Source: ${isFromApi ? 'LIVE' : 'SEEDED'}]\n` +
+      `Formula: cumulative_saved = Σ ((5 − tested_i) × 2.5 min)\n` +
+      `Raw Inputs: ${runs.length} runs displayed, sum = ${cumulativeMinutes.toFixed(1)} min`
+    );
   }
 }
 
@@ -1636,6 +1711,10 @@ function renderOverviewChips() {
 function selectServiceAndInspect(svc) {
   selectService(svc);
   switchTab('scope');
+  const inspectorCard = document.getElementById('service-inspector-card');
+  if (inspectorCard) {
+    inspectorCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
 }
 
 function renderSavingsBaselineBar() {
@@ -1660,6 +1739,17 @@ function renderSavingsBaselineBar() {
   if (barSaved) barSaved.style.width = `${savedPct}%`;
   if (lblTested) lblTested.textContent = `Tested: ${testedMins}m (${testedCount}/5)`;
   if (lblSaved) lblSaved.textContent = `Skipped (Saved): ${savedMins}m (${total - testedCount}/5)`;
+
+  const baselineCard = document.querySelector('.savings-baseline-card');
+  if (baselineCard) {
+    const isSimulated = blast !== SCENARIOS.current;
+    const sourceLabel = isSimulated ? 'SEEDED' : 'LAST RUN';
+    baselineCard.setAttribute('title',
+      `[Source: ${sourceLabel}]\n` +
+      `Formula: Baseline = 5 services × 2.5 min = 12.5 min\n` +
+      `Tested: ${testedCount} × 2.5 min = ${testedMins}m | Skipped: ${total - testedCount} × 2.5 min = ${savedMins}m`
+    );
+  }
 }
 
 function renderPipelineStages() {
@@ -1757,8 +1847,10 @@ function switchTab(tabId) {
     }
   });
 
-  if (window.location.hash !== `#${activeTab}`) {
-    history.replaceState(null, null, `#${activeTab}`);
+  if (window.location && window.location.hash !== `#${activeTab}`) {
+    if (window.history && typeof window.history.replaceState === 'function') {
+      window.history.replaceState(null, null, `#${activeTab}`);
+    }
   }
 
   if (activeTab === 'scope') {
@@ -1782,6 +1874,7 @@ function initTabs() {
 
 function initUI() {
   initTabs();
+  setupKeyboardShortcuts();
 
   const select = document.getElementById('scenario-select');
   select.addEventListener('change', (e) => {
@@ -1815,6 +1908,127 @@ function initUI() {
   }
 }
 
+function copyToClipboard(text, element, defaultText = null) {
+  if (!text) return;
+  const doFeedback = () => {
+    if (!element) return;
+    const orig = defaultText !== null ? defaultText : element.textContent;
+    element.textContent = '✓ Copied';
+    element.classList.add('copied');
+    setTimeout(() => {
+      element.textContent = orig;
+      element.classList.remove('copied');
+    }, 1800);
+  };
+
+  const nav = (typeof window !== 'undefined' && window.navigator) || (typeof navigator !== 'undefined' && navigator);
+  if (nav && nav.clipboard && typeof nav.clipboard.writeText === 'function') {
+    nav.clipboard.writeText(text).then(doFeedback).catch(() => {
+      fallbackCopy(text, doFeedback);
+    });
+  } else {
+    fallbackCopy(text, doFeedback);
+  }
+}
+
+function fallbackCopy(text, cb) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (cb) cb();
+  } catch (err) {
+    console.warn('Copy failed:', err);
+  }
+}
+
+function copyCommitTag(el) {
+  const blast = currentBlastRadius || SCENARIOS.auth_only;
+  const sha = blast.commitSha || (el ? el.textContent.replace(/^commit:\s*/, '') : 'latest');
+  copyToClipboard(sha, el, el ? el.textContent : null);
+}
+
+function copyDockerCommand(btn) {
+  const titleEl = document.getElementById('terminal-title');
+  const cmd = titleEl ? titleEl.textContent.trim() : '';
+  if (cmd) {
+    copyToClipboard(cmd, btn, '📋 Copy');
+  }
+}
+
+function setupKeyboardShortcuts() {
+  window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    const isInputActive = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+
+    if (e.key === 'Escape') {
+      if (document.activeElement && document.activeElement !== document.body) {
+        const active = document.activeElement;
+        if (active.id === 'history-branch-filter') {
+          active.value = '';
+          filterHistory();
+        }
+        active.blur();
+      }
+      return;
+    }
+
+    if (isInputActive) return;
+
+    switch (e.key) {
+      case '1':
+        e.preventDefault();
+        switchTab('overview');
+        break;
+      case '2':
+        e.preventDefault();
+        switchTab('scope');
+        break;
+      case '3':
+        e.preventDefault();
+        switchTab('pipeline');
+        break;
+      case '4':
+        e.preventDefault();
+        switchTab('containers');
+        break;
+      case '5':
+        e.preventDefault();
+        switchTab('load-balancer');
+        break;
+      case '6':
+        e.preventDefault();
+        switchTab('history');
+        break;
+      case '/':
+        e.preventDefault();
+        switchTab('history');
+        const filterInput = document.getElementById('history-branch-filter');
+        if (filterInput) {
+          filterInput.focus();
+          filterInput.select();
+        }
+        break;
+      case 'r':
+      case 'R':
+        e.preventDefault();
+        if (typeof window.refreshDashboard === 'function') {
+          window.refreshDashboard();
+        }
+        break;
+      default:
+        break;
+    }
+  });
+}
+
 function setupLiveUpdates() {
   if (typeof EventSource !== 'undefined') {
     try {
@@ -1832,8 +2046,8 @@ function setupLiveUpdates() {
 
 async function refreshDashboard() {
   const btn = document.getElementById('btn-refresh');
-  const originalText = btn ? btn.textContent : '↻ Refresh';
-  if (btn) btn.textContent = '⏳ Refreshing...';
+  const originalHtml = btn ? btn.innerHTML : '↻ Refresh <kbd class="btn-kbd">r</kbd>';
+  if (btn) btn.innerHTML = '⏳ Refreshing...';
 
   try {
     await fetch('/api/refresh', { method: 'POST' }).catch(() => {});
@@ -1842,9 +2056,9 @@ async function refreshDashboard() {
   await loadData();
 
   if (btn) {
-    btn.textContent = '✓ Updated!';
+    btn.innerHTML = '✓ Updated!';
     setTimeout(() => {
-      btn.textContent = originalText;
+      btn.innerHTML = originalHtml;
     }, 1000);
   }
 }
@@ -1861,6 +2075,9 @@ window.filterContainers = filterContainers;
 window.sortContainers = sortContainers;
 window.inspectContainerRow = inspectContainerRow;
 window.filterHistory = filterHistory;
+window.copyToClipboard = copyToClipboard;
+window.copyCommitTag = copyCommitTag;
+window.copyDockerCommand = copyDockerCommand;
 
 // Auto-recheck on window focus when user switches back to browser tab
 window.addEventListener('focus', () => {

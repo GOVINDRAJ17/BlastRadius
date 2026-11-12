@@ -44,7 +44,7 @@
         <option value="notifications_only">Simulate: 'notifications' Changed [SEEDED]</option>
         <option value="shared_only">Simulate: 'shared' Changed (Full Rebuild) [SEEDED]</option>
       </select>
-      <button class="btn" id="btn-refresh" onclick="window.refreshDashboard()">↻ Refresh</button>
+      <button class="btn" id="btn-refresh" onclick="window.refreshDashboard()">↻ Refresh <kbd class="btn-kbd">r</kbd></button>
     </div>
   </header>
 
@@ -62,12 +62,12 @@
   <!-- Tabbed Navigation Bar (Synced to URL Hash #overview, #scope, #pipeline, #containers, #load-balancer, #history) -->
   <div class="nav-tabs-container">
     <nav class="nav-tabs" role="tablist">
-      <button class="tab-link active" data-tab="overview" onclick="switchTab('overview')">📊 Overview</button>
-      <button class="tab-link" data-tab="scope" onclick="switchTab('scope')">📋 Scope Contract</button>
-      <button class="tab-link" data-tab="pipeline" onclick="switchTab('pipeline')">🔄 Pipeline</button>
-      <button class="tab-link" data-tab="containers" onclick="switchTab('containers')">🐳 Containers</button>
-      <button class="tab-link" data-tab="load-balancer" onclick="switchTab('load-balancer')">⚖️ Load Balancer</button>
-      <button class="tab-link" data-tab="history" onclick="switchTab('history')">📈 History</button>
+      <button class="tab-link active" data-tab="overview" onclick="switchTab('overview')">📊 Overview <kbd class="tab-kbd">1</kbd></button>
+      <button class="tab-link" data-tab="scope" onclick="switchTab('scope')">📋 Scope Contract <kbd class="tab-kbd">2</kbd></button>
+      <button class="tab-link" data-tab="pipeline" onclick="switchTab('pipeline')">🔄 Pipeline <kbd class="tab-kbd">3</kbd></button>
+      <button class="tab-link" data-tab="containers" onclick="switchTab('containers')">🐳 Containers <kbd class="tab-kbd">4</kbd></button>
+      <button class="tab-link" data-tab="load-balancer" onclick="switchTab('load-balancer')">⚖️ Load Balancer <kbd class="tab-kbd">5</kbd></button>
+      <button class="tab-link" data-tab="history" onclick="switchTab('history')">📈 History <kbd class="tab-kbd">6</kbd></button>
     </nav>
   </div>
 
@@ -87,7 +87,7 @@
         </div>
         <div class="ci-banner-right">
           <span class="ci-detail-tag" id="ci-branch-tag">branch: master</span>
-          <span class="ci-detail-tag" id="ci-commit-tag">commit: ...</span>
+          <span class="ci-detail-tag clickable-copy" id="ci-commit-tag" onclick="copyCommitTag(this)" title="Click to copy commit SHA">commit: ...</span>
           <span class="ci-time" id="ci-time-tag">just now</span>
         </div>
       </div>
@@ -247,7 +247,7 @@
         <!-- Sidebar: Service Inspector & Monorepo Roster -->
         <aside class="sidebar-panel">
           <!-- Node Inspector Card -->
-          <div class="side-card">
+          <div class="side-card" id="service-inspector-card">
             <div class="side-title">
               <span>🔍</span> Service Inspector
             </div>
@@ -335,7 +335,10 @@
               <span class="dot green"></span>
             </div>
             <span class="terminal-title" id="terminal-title">docker run --rm blastradius-auth:latest</span>
-            <span class="terminal-badge" id="terminal-badge">EXIT CODE: 0 (PASS) [SEEDED]</span>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <button class="copy-btn" id="btn-copy-docker-cmd" onclick="copyDockerCommand(this)" title="Copy Docker run command">📋 Copy</button>
+              <span class="terminal-badge" id="terminal-badge">EXIT CODE: 0 (PASS) [SEEDED]</span>
+            </div>
           </div>
           <pre class="terminal-body" id="terminal-output"><code>Loading test run output...</code></pre>
         </div>
@@ -482,7 +485,7 @@
         <div class="filter-bar">
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <label for="history-branch-filter" style="font-size: 0.8rem; color: var(--text-secondary);">Filter Branch:</label>
-            <input type="text" id="history-branch-filter" placeholder="e.g. main, fix, perf..." style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 3px 8px; font-size: 0.78rem;" oninput="filterHistory()" />
+            <input type="text" id="history-branch-filter" placeholder="Filter branch... (press /)" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 3px 8px; font-size: 0.78rem;" oninput="filterHistory()" />
           </div>
         </div>
 
@@ -512,7 +515,16 @@
   </main>
 
   <footer>
-    BlastRadius &copy; 2026 — Selective Dependency-Graph CI Testing System for Monorepos.
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; max-width: 1400px; margin: 0 auto;">
+      <span>BlastRadius &copy; 2026 — Selective Dependency-Graph CI Testing System for Monorepos.</span>
+      <div class="keyboard-legend">
+        <span style="color: var(--text-muted); font-size: 0.75rem;">Shortcuts:</span>
+        <span><kbd>1</kbd>–<kbd>6</kbd> Tabs</span>
+        <span><kbd>/</kbd> Filter</span>
+        <span><kbd>r</kbd> Refresh</span>
+        <span><kbd>Esc</kbd> Blur</span>
+      </div>
+    </div>
   </footer>
 
   <!-- Application Logic -->
