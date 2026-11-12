@@ -1,26 +1,80 @@
 :root {
-  --bg-primary: #0b0f19;
-  --bg-secondary: #111827;
-  --bg-card: rgba(17, 24, 39, 0.85);
+  /* 4 Surface Levels */
+  --surface-canvas: #090d16;
+  --surface-card: #0f172a;
+  --surface-subtle: #1e293b;
+  --surface-overlay: #334155;
+
+  /* Aliases for backwards compatibility */
+  --bg-primary: var(--surface-canvas);
+  --bg-secondary: var(--surface-card);
+  --bg-card: var(--surface-card);
+  --card-bg: var(--surface-card);
+
   --border-color: rgba(255, 255, 255, 0.08);
-  --border-highlight: rgba(99, 102, 241, 0.4);
+  --border-highlight: rgba(56, 189, 248, 0.35);
 
-  --text-primary: #f9fafb;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
+  /* 3 Text Levels */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
 
-  --color-red: #ef4444;
-  --color-red-glow: rgba(239, 68, 68, 0.35);
-  --color-orange: #f59e0b;
-  --color-orange-glow: rgba(245, 158, 11, 0.35);
-  --color-gray: #4b5563;
-  --color-gray-glow: rgba(75, 85, 99, 0.2);
-  --color-green: #10b981;
-  --color-blue: #3b82f6;
-  --color-purple: #8b5cf6;
+  /* Semantic Colors (no decorative purple/cyan on status indicators) */
+  --color-success: #10b981;
+  --color-success-bg: rgba(16, 185, 129, 0.12);
+  --color-success-glow: rgba(16, 185, 129, 0.35);
 
+  --color-warning: #f59e0b;
+  --color-warning-bg: rgba(245, 158, 11, 0.12);
+  --color-warning-glow: rgba(245, 158, 11, 0.35);
+
+  --color-danger: #ef4444;
+  --color-danger-bg: rgba(239, 68, 68, 0.12);
+  --color-danger-glow: rgba(239, 68, 68, 0.35);
+
+  --color-neutral: #94a3b8;
+  --color-neutral-bg: rgba(148, 163, 184, 0.12);
+
+  /* Aliases for color compatibility */
+  --color-red: var(--color-danger);
+  --color-red-glow: var(--color-danger-glow);
+  --color-orange: var(--color-warning);
+  --color-orange-glow: var(--color-warning-glow);
+  --color-gray: var(--color-neutral);
+  --color-gray-glow: rgba(148, 163, 184, 0.2);
+  --color-green: var(--color-success);
+
+  /* Brand / Product Identity Accent (cyan / indigo for brand identity only) */
+  --brand-accent: #38bdf8;
+  --brand-purple: #8b5cf6;
+
+  /* Typography */
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Tabular Numerals for metrics, counters, and tables (prevents jitter) */
+.stat-value,
+.tabular-nums,
+.history-table td,
+.history-table th,
+.pipeline-stage-count,
+.verdict-text,
+code,
+pre,
+.commit-tag,
+.replica-badge,
+.dist-bar-segment,
+#traffic-distribution-tallies span {
+  font-variant-numeric: tabular-nums;
+}
+
+code,
+pre,
+.commit-tag,
+.stat-value,
+.tabular-nums {
+  font-family: var(--font-mono);
 }
 
 * {
@@ -166,7 +220,7 @@ body {
   gap: 0.5rem;
   position: relative;
   overflow: hidden;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
 .stat-card:hover {
@@ -183,11 +237,11 @@ body {
   height: 100%;
 }
 
-.stat-card.total::before { background: #6366f1; }
-.stat-card.changed::before { background: var(--color-red); }
-.stat-card.affected::before { background: var(--color-orange); }
-.stat-card.skipped::before { background: var(--color-green); }
-.stat-card.saved::before { background: #38bdf8; }
+.stat-card.total::before { background: var(--surface-overlay); }
+.stat-card.changed::before { background: var(--color-danger); }
+.stat-card.affected::before { background: var(--color-warning); }
+.stat-card.skipped::before { background: var(--color-neutral); }
+.stat-card.saved::before { background: var(--color-success); }
 
 .stat-header {
   display: flex;
@@ -371,21 +425,27 @@ body {
 }
 
 .badge.test {
-  background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: var(--color-danger-bg);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
 }
 
 .badge.transitive {
-  background: rgba(245, 158, 11, 0.2);
-  color: #fcd34d;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: var(--color-warning-bg);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
 .badge.skipped {
-  background: rgba(107, 114, 128, 0.2);
-  color: #d1d5db;
-  border: 1px solid rgba(107, 114, 128, 0.3);
+  background: var(--color-neutral-bg);
+  color: var(--text-secondary);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.badge.pass {
+  background: var(--color-success-bg);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
 }
 
 /* Node Inspector Card */
@@ -1131,4 +1191,127 @@ footer {
   font-size: 0.65rem;
   margin-left: 0.25rem;
   opacity: 0.6;
+}
+
+/* ============================================================================
+   Phase C: Visual System Enhancements
+   ============================================================================ */
+
+/* Shimmer Skeleton Loaders */
+.skeleton {
+  background: linear-gradient(90deg, rgba(30, 41, 59, 0.4) 25%, rgba(51, 65, 85, 0.4) 50%, rgba(30, 41, 59, 0.4) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeleton-text {
+  height: 12px;
+  margin-bottom: 6px;
+}
+
+.skeleton-box {
+  height: 60px;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Actionable Empty State */
+.empty-state {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  color: var(--text-secondary);
+}
+
+.empty-state-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-bottom: 0.35rem;
+}
+
+.empty-state-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  max-width: 420px;
+  margin: 0 auto 0.75rem;
+  line-height: 1.4;
+}
+
+.empty-state-cmd {
+  display: inline-block;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--border-color);
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: #38bdf8;
+}
+
+/* Reduced Motion Override (All transitions <= 150ms) */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Responsiveness: Desktop (1440px), Tablet (768px), Mobile (375px) */
+.history-table-container,
+#containers-table-container,
+.pipeline-stages {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .header-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .container {
+    padding: 1rem;
+    gap: 1rem;
+  }
+  .verdict-banner-container,
+  .nav-tabs-container {
+    padding: 0 1rem;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .content-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .verdict-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .service-chips-grid {
+    grid-template-columns: 1fr;
+  }
 }

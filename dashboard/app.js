@@ -696,8 +696,13 @@ async function loadInfraStatus() {
   if (talliesContainer) talliesContainer.style.display = 'none';
   if (unavailEl) {
     unavailEl.style.display = 'block';
-    unavailEl.style.color = '#f87171';
-    unavailEl.textContent = 'Traffic Distribution: unavailable (start docker compose)';
+    unavailEl.innerHTML = `
+      <div class="empty-state" style="padding: 1rem 0.5rem;">
+        <div class="empty-state-title" style="color: #f87171;">Traffic Distribution Unavailable</div>
+        <div class="empty-state-desc">NGINX reverse proxy and API cluster are unreachable. Start the stack with:</div>
+        <code class="empty-state-cmd">docker compose up -d</code>
+      </div>
+    `;
   }
 }
 
@@ -991,7 +996,14 @@ async function loadContainerMetrics() {
   if (contentEl) contentEl.style.display = 'none';
   if (unavailEl) {
     unavailEl.style.display = 'block';
-    unavailEl.textContent = 'Container metrics unavailable (start docker compose)';
+    unavailEl.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">🐳</div>
+        <div class="empty-state-title">No containers reporting</div>
+        <div class="empty-state-desc">Docker Engine telemetry is currently unavailable. Start the stack with:</div>
+        <code class="empty-state-cmd">docker compose up -d</code>
+      </div>
+    `;
   }
 }
 
@@ -1526,6 +1538,26 @@ function renderHistory(filterBranch = '') {
 
   if (filterBranch) {
     runs = runs.filter(r => (r.branch || '').toLowerCase().includes(filterBranch));
+  }
+
+  if (runs.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" style="padding: 2.5rem 1rem;">
+          <div class="empty-state">
+            <div class="empty-state-icon">📈</div>
+            <div class="empty-state-title">No matching CI runs found</div>
+            <div class="empty-state-desc">No recorded runs match this branch filter. Clear the search input or run:</div>
+            <code class="empty-state-cmd">npm test</code>
+          </div>
+        </td>
+      </tr>
+    `;
+    const cumEl = document.getElementById('cumulative-saved-text');
+    if (cumEl) {
+      cumEl.textContent = `Total Cumulative Savings: 0.0 CI minutes (0 runs)`;
+    }
+    return;
   }
 
   tbody.innerHTML = runs.map(r => {
