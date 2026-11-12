@@ -7,3 +7,4 @@
 *.js text eol=lf
 *.tf text eol=lf
 *.ps1 text eol=crlf
+
