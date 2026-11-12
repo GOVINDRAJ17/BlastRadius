@@ -1,0 +1,11 @@
+# BlastRadius 2.0 - Terraform Configuration Example
+# Copy this file to terraform.tfvars to customize your cloud deployment.
+
+aws_region           = "us-east-1"
+environment          = "production"
+project_name         = "blastradius"
+cloud_deploy_enabled = false
+
+# Set your bearer token secret for CI report ingestion (leave null or set in CI secrets)
+report_api_secret = "REPLACE_WITH_YOUR_REPORT_SECRET"
+

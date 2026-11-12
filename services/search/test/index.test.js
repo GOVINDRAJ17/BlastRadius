@@ -24,3 +24,10 @@ test('search/getCatalogItem retrieves correct item', () => {
   assert.notEqual(item, null);
   assert.equal(item.name, 'Global CDN');
 });
+
+test('search/searchCatalog matches lambda edge item', () => {
+  const results = searchCatalog('lambda');
+  assert.equal(results.length, 1);
+  assert.equal(results[0].id, 'item_5');
+  assert.equal(results[0].name, 'Edge Compute Worker');
+});

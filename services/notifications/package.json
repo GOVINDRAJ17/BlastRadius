@@ -1,6 +1,10 @@
 {
   "name": "@monorepo/notifications",
   "version": "1.0.0",
+  "category": "application",
+  "blastradius": {
+    "category": "application"
+  },
   "description": "Customer notification and receipt service",
   "main": "index.js",
   "scripts": {

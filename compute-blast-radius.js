@@ -201,6 +201,8 @@ function mapFileToService(filePath, knownServices) {
  * the canonical Phase 1 deployment-scope contract.
  */
 function computeBlastRadius(graph, changedFiles, options = {}) {
+  const applicationServices = (graph.applicationServices || (graph.nodes || []).filter(s => s !== 'api')).slice().sort();
+  const infrastructureServices = (graph.infrastructureServices || ['api']).slice().sort();
   const allServices = (graph.nodes || Object.keys(graph.dependencies)).slice().sort();
   const reverseDeps = graph.reverseDependencies || {};
 
@@ -223,7 +225,11 @@ function computeBlastRadius(graph, changedFiles, options = {}) {
     }
   }
 
-  const changedServices = Array.from(changedServicesSet).sort();
+  const allChangedServices = Array.from(changedServicesSet).sort();
+  const changedAppServices = allChangedServices.filter(s => applicationServices.includes(s));
+  const changedInfraServices = allChangedServices.filter(s => infrastructureServices.includes(s));
+  const changedServices = changedAppServices;
+
   const affectedServicesSet = new Set();
   const explanations = {};
   const impactPaths = {}; // node -> array of steps explaining propagation
@@ -235,7 +241,7 @@ function computeBlastRadius(graph, changedFiles, options = {}) {
   if (missingBase) {
     full_rebuild = true;
     full_rebuild_reason = missingBaseReason || 'Missing or invalid git diff base ref (new branch or force push)';
-    for (const svc of allServices) {
+    for (const svc of applicationServices) {
       affectedServicesSet.add(svc);
       explanations[svc] = `Included in full rebuild: ${full_rebuild_reason}`;
       impactPaths[svc] = ['root', svc];
@@ -249,7 +255,7 @@ function computeBlastRadius(graph, changedFiles, options = {}) {
       ? 'Shared core utility package was modified (full rebuild fallback)'
       : 'Root package/dependency manifest modified (full rebuild fallback)';
 
-    for (const svc of allServices) {
+    for (const svc of applicationServices) {
       affectedServicesSet.add(svc);
       if (changedServices.includes(svc)) {
         explanations[svc] = `Directly modified in git diff (${fileDetailsByService[svc]?.length || 0} file(s))`;
@@ -276,6 +282,8 @@ function computeBlastRadius(graph, changedFiles, options = {}) {
       const downstreamDependents = reverseDeps[currentSvc] || [];
 
       for (const dependent of downstreamDependents) {
+        if (!applicationServices.includes(dependent)) continue;
+
         if (!affectedServicesSet.has(dependent)) {
           affectedServicesSet.add(dependent);
           const newTrace = [...trace, dependent];
@@ -293,12 +301,12 @@ function computeBlastRadius(graph, changedFiles, options = {}) {
   // Case 3: Empty change set (no files changed, nothing affected)
 
   const affectedServices = Array.from(affectedServicesSet).sort();
-  const skippedServices = allServices.filter(s => !affectedServicesSet.has(s)).sort();
+  const skippedServices = applicationServices.filter(s => !affectedServicesSet.has(s)).sort();
 
   // Directly affected vs transitively affected calculation
   let directly_affected = [];
   if (missingBase) {
-    directly_affected = [...allServices];
+    directly_affected = [...applicationServices];
   } else if (full_rebuild && changedServices.includes('shared')) {
     directly_affected = ['shared'];
   } else if (full_rebuild) {
@@ -315,8 +323,8 @@ function computeBlastRadius(graph, changedFiles, options = {}) {
   const to_build = [...affectedServices];
   const to_deploy = [...affectedServices];
 
-  // Metrics
-  const totalServices = allServices.length;
+  // Metrics (computed strictly over application services)
+  const totalServices = applicationServices.length;
   const affectedCount = affectedServices.length;
   const skippedCount = skippedServices.length;
   const pctSkipped = totalServices > 0 ? Math.round((skippedCount / totalServices) * 100) : 0;
@@ -346,6 +354,7 @@ function computeBlastRadius(graph, changedFiles, options = {}) {
     base_ref: baseRef,
     changed_files: changedFiles.slice().map(f => f.split('\\').join('/')),
     changed_services: changedServices,
+    changed_infrastructure: changedInfraServices,
     directly_affected,
     transitively_affected,
     tested,

@@ -16,6 +16,12 @@ variable "project_name" {
   default     = "blastradius"
 }
 
+variable "cloud_deploy_enabled" {
+  type        = bool
+  description = "Gate controlling AWS resource creation. Set to false to prevent cloud provisioning."
+  default     = false
+}
+
 variable "services" {
   type        = list(string)
   description = "List of microservices in the monorepo"
@@ -44,6 +50,5 @@ variable "report_api_secret" {
   type        = string
   description = "Bearer token secret for POST /api/reports ingestion"
   sensitive   = true
-  default     = "blastradius_report_secret_default_9f8e7d"
+  default     = null
 }
-

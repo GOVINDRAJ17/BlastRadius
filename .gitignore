@@ -3,3 +3,9 @@ node_modules/
 *.log
 .env
 .env.local
+
+# Terraform artifacts & state
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl

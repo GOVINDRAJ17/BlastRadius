@@ -1,6 +1,10 @@
 {
   "name": "@monorepo/payments",
   "version": "1.0.0",
+  "category": "application",
+  "blastradius": {
+    "category": "application"
+  },
   "description": "Payment processing service",
   "main": "index.js",
   "scripts": {

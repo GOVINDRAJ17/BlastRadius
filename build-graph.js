@@ -187,6 +187,21 @@ function resolveImportToService(currentService, sourceFilePath, specifier, allSe
 }
 
 /**
+ * Resolves service category (application vs infrastructure) from package.json manifest.
+ */
+function getServiceCategory(svc, servicesDir = SERVICES_DIR) {
+  try {
+    const pkgPath = path.join(servicesDir, svc, 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+      if (pkg.category) return pkg.category;
+      if (pkg.blastradius && pkg.blastradius.category) return pkg.blastradius.category;
+    }
+  } catch {}
+  return svc === 'api' ? 'infrastructure' : 'application';
+}
+
+/**
  * Builds full forward and reverse dependency graph for all monorepo services.
  */
 function buildDependencyGraph(options = {}) {
@@ -197,6 +212,19 @@ function buildDependencyGraph(options = {}) {
   const reverseDependencies = {};
   const edges = [];
   const serviceStats = {};
+  const categories = {};
+  const applicationServices = [];
+  const infrastructureServices = [];
+
+  for (const svc of services) {
+    const cat = getServiceCategory(svc, servicesDir);
+    categories[svc] = cat;
+    if (cat === 'infrastructure') {
+      infrastructureServices.push(svc);
+    } else {
+      applicationServices.push(svc);
+    }
+  }
 
   // Initialize adjacency lists for all services
   for (const svc of services) {
@@ -257,9 +285,12 @@ function buildDependencyGraph(options = {}) {
   }
 
   const graph = {
-    version: '1.0.0',
+    version: '2.0.0',
     generatedAt: new Date().toISOString(),
     nodes: services,
+    applicationServices: applicationServices.sort(),
+    infrastructureServices: infrastructureServices.sort(),
+    categories,
     serviceStats,
     dependencies,
     reverseDependencies,

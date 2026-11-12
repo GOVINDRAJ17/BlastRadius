@@ -12,6 +12,7 @@ const client = require('prom-client');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { APPLICATION_SERVICES, validateScopeContract } = require('./validator.js');
 
 const app = express();
 const PORT = process.env.API_PORT || process.env.PORT || 4000;
@@ -459,8 +460,38 @@ app.post('/api/reports', reportsLimiter, async (req, res) => {
     });
   }
 
+  // Enforce Scope Contract Invariants
+  const validation = validateScopeContract(report);
+  if (!validation.valid) {
+    ciRunsTotal.inc({ result: 'validation_failed', instance: INSTANCE_ID });
+    return res.status(422).json({
+      error: 'Unprocessable Entity: Scope contract invariants violated',
+      violations: validation.errors,
+      instance_id: INSTANCE_ID
+    });
+  }
+
   const runId = report.run_id || report.github_run_id || `run-${Date.now().toString(36)}`;
   const commitSha = report.commit_sha || report.commitSha || 'unknown';
+  const runAttempt = String(report.run_attempt || report.github_run_attempt || '1');
+  const idempotencyKey = `blastradius:idempotency:${commitSha}:${runAttempt}`;
+
+  // Idempotency check: Reject duplicate ingestion for same commit + attempt
+  if (isRedisConnected) {
+    try {
+      const existing = await redis.get(idempotencyKey);
+      if (existing) {
+        return res.status(409).json({
+          error: 'Conflict: Run report already ingested for commit and attempt',
+          run_id: existing,
+          commit_sha: commitSha,
+          run_attempt: runAttempt,
+          instance_id: INSTANCE_ID
+        });
+      }
+      await redis.set(idempotencyKey, runId, 'EX', 86400);
+    } catch {}
+  }
 
   // Cache in Redis if connected
   if (isRedisConnected) {

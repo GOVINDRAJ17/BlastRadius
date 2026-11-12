@@ -1,6 +1,10 @@
 {
   "name": "@monorepo/search",
   "version": "1.0.0",
+  "category": "application",
+  "blastradius": {
+    "category": "application"
+  },
   "description": "Standalone search and indexing service",
   "main": "index.js",
   "scripts": {

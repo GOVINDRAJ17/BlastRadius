@@ -1,9 +1,28 @@
 {
-  "commit_sha": "7b292d5915f1713a038b17d20f03eddeb39baf22",
-  "base_ref": "non-existent-branch-999",
-  "changed_files": [],
-  "changed_services": [],
-  "directly_affected": [
+  "commit_sha": "537c60ab04ecd9150221c8770229f0af38e0a0e4",
+  "base_ref": "HEAD",
+  "changed_files": [
+    ".gitattributes",
+    "build-graph.js",
+    "compute-blast-radius.js",
+    "dashboard/app.js",
+    "infrastructure/terraform/main.tf",
+    "infrastructure/terraform/outputs.tf",
+    "infrastructure/terraform/variables.tf",
+    "services/api/index.js",
+    "services/api/package.json",
+    "services/api/test/index.test.js",
+    "services/auth/package.json",
+    "services/notifications/package.json",
+    "services/payments/package.json",
+    "services/search/index.js",
+    "services/search/package.json",
+    "services/search/test/index.test.js",
+    "services/shared/package.json",
+    "infrastructure/terraform/terraform.tfvars.example",
+    "services/api/validator.js"
+  ],
+  "changed_services": [
     "api",
     "auth",
     "notifications",
@@ -11,7 +30,16 @@
     "search",
     "shared"
   ],
-  "transitively_affected": [],
+  "directly_affected": [
+    "shared"
+  ],
+  "transitively_affected": [
+    "api",
+    "auth",
+    "notifications",
+    "payments",
+    "search"
+  ],
   "tested": [
     "api",
     "auth",
@@ -38,30 +66,24 @@
   ],
   "skipped": [],
   "full_rebuild": true,
-  "full_rebuild_reason": "Missing or invalid git diff base ref 'non-existent-branch-999' (new branch or force push)",
+  "full_rebuild_reason": "Shared core utility package was modified (full rebuild fallback)",
   "causal_paths": {
     "api": [
-      "root",
       "api"
     ],
     "auth": [
-      "root",
       "auth"
     ],
     "notifications": [
-      "root",
       "notifications"
     ],
     "payments": [
-      "root",
       "payments"
     ],
     "search": [
-      "root",
       "search"
     ],
     "shared": [
-      "root",
       "shared"
     ]
   }

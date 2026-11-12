@@ -869,15 +869,19 @@ function renderStats() {
 function renderServiceList() {
   const listEl = document.getElementById('service-list');
   const blast = currentBlastRadius || SCENARIOS.auth_only;
-  const services = graphData.nodes || Object.keys(graphData.dependencies);
+  const appServices = graphData.applicationServices || (graphData.nodes || []).filter(s => s !== 'api');
+  const infraServices = graphData.infrastructureServices || ['api'];
 
-  listEl.innerHTML = services.map(svc => {
+  const renderItem = (svc, isInfra = false) => {
     const isChanged = blast.changedServices.includes(svc);
     const isAffected = blast.affectedServices.includes(svc);
 
     let badgeClass = 'skipped';
     let badgeText = 'Skipped';
-    if (isChanged) {
+    if (isInfra) {
+      badgeClass = 'infra';
+      badgeText = 'Cluster Infra';
+    } else if (isChanged) {
       badgeClass = 'test';
       badgeText = 'Changed';
     } else if (isAffected) {
@@ -889,11 +893,19 @@ function renderServiceList() {
       <div class="service-row" onclick="selectService('${svc}')">
         <div class="service-info">
           <span class="service-name">${svc}</span>
+          ${isInfra ? '<span style="font-size:0.7rem;color:#a78bfa;margin-left:6px;">[Cluster Host]</span>' : ''}
         </div>
-        <span class="badge ${badgeClass}">${badgeText}</span>
+        <span class="badge ${badgeClass}" style="${isInfra ? 'background:rgba(139,92,246,0.15);color:#c4b5fd;border:1px solid #8b5cf6;' : ''}">${badgeText}</span>
       </div>
     `;
-  }).join('');
+  };
+
+  listEl.innerHTML = `
+    <div style="font-size:0.75rem;font-weight:600;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">Application Services (${appServices.length})</div>
+    ${appServices.map(svc => renderItem(svc, false)).join('')}
+    <div style="font-size:0.75rem;font-weight:600;color:#94a3b8;margin-top:12px;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">Infrastructure Services (${infraServices.length})</div>
+    ${infraServices.map(svc => renderItem(svc, true)).join('')}
+  `;
 }
 
 function selectService(svcName) {
