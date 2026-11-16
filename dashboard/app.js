@@ -169,6 +169,33 @@ const NON_RUNTIME_PATTERNS = new Set([
   '.gitattributes'
 ]);
 
+let demoTelemetryActive = false;
+
+const SEEDED_CONTAINERS = [
+  { service: 'api-1', health: 'healthy', cpu_percent: 0.06, memory_bytes: 35651584, restart_count: 0, uptime_seconds: 43200, source: 'SEEDED' },
+  { service: 'api-2', health: 'healthy', cpu_percent: 0.20, memory_bytes: 33554432, restart_count: 0, uptime_seconds: 43200, source: 'SEEDED' },
+  { service: 'api-3', health: 'healthy', cpu_percent: 0.04, memory_bytes: 31457280, restart_count: 0, uptime_seconds: 43200, source: 'SEEDED' },
+  { service: 'redis', health: 'healthy', cpu_percent: 0.02, memory_bytes: 4194304, restart_count: 0, uptime_seconds: 43200, source: 'SEEDED' },
+  { service: 'nginx', health: 'healthy', cpu_percent: 0.01, memory_bytes: 3145728, restart_count: 0, uptime_seconds: 46800, source: 'SEEDED' },
+  { service: 'prometheus', health: 'healthy', cpu_percent: 0.03, memory_bytes: 140509184, restart_count: 0, uptime_seconds: 43200, source: 'SEEDED' },
+  { service: 'grafana', health: 'healthy', cpu_percent: 0.08, memory_bytes: 332398592, restart_count: 0, uptime_seconds: 46800, source: 'SEEDED' },
+  { service: 'cadvisor', health: 'healthy', cpu_percent: 0.04, memory_bytes: 48234496, restart_count: 0, uptime_seconds: 43200, source: 'SEEDED' }
+];
+
+const SEEDED_TRAFFIC = {
+  total: 120,
+  counts: { 'api-1': 41, 'api-2': 40, 'api-3': 39 },
+  source: 'SEEDED',
+  counted_routes: '/api/*'
+};
+
+function toggleDemoTelemetry(enabled) {
+  demoTelemetryActive = Boolean(enabled);
+  loadInfraStatus();
+  loadContainerMetrics();
+}
+window.toggleDemoTelemetry = toggleDemoTelemetry;
+
 /**
  * Unified CI compute savings formula.
  * Standard definition: saved = (5 - tested) * 2.5 min when affected > 0, otherwise 0 min / N/A.
@@ -602,6 +629,12 @@ async function loadInfraStatus() {
   const badgeApi = document.getElementById('badge-api-source');
   const countEl = document.getElementById('active-replica-count');
   const redisEl = document.getElementById('infra-redis-status');
+  const badgeLb = document.getElementById('badge-lb-source');
+  const failsEl = document.getElementById('lb-fails-text');
+  const barContainer = document.getElementById('dist-bar-container');
+  const talliesContainer = document.getElementById('traffic-distribution-tallies');
+  const unavailEl = document.getElementById('traffic-distribution-unavailable');
+  const sourceLabel = document.getElementById('lb-source-label');
 
   try {
     const res = await fetch(`${apiBase}/api/infra/status`, { cache: 'no-store' });
@@ -610,6 +643,13 @@ async function loadInfraStatus() {
       if (badgeApi) {
         badgeApi.textContent = 'LIVE API (DOCKER)';
         badgeApi.className = 'source-pill live';
+      }
+      if (badgeLb) {
+        badgeLb.textContent = 'LIVE';
+        badgeLb.className = 'source-pill live';
+      }
+      if (failsEl) {
+        failsEl.textContent = `Passive Fails: ${data.passive_fails ?? 0}`;
       }
       if (countEl) {
         countEl.textContent = `${data.active_replicas || 0}/${data.total_replicas || 3} active`;
@@ -629,11 +669,6 @@ async function loadInfraStatus() {
       });
 
       // Update replica traffic distribution from live measurements
-      const barContainer = document.getElementById('dist-bar-container');
-      const talliesContainer = document.getElementById('traffic-distribution-tallies');
-      const unavailEl = document.getElementById('traffic-distribution-unavailable');
-      const sourceLabel = document.getElementById('lb-source-label');
-
       if (data.traffic) {
         if (sourceLabel) {
           sourceLabel.textContent = `(source: ${data.traffic.source || 'live counter'}, routes: ${data.traffic.counted_routes || '/api/*'})`;
@@ -690,17 +725,84 @@ async function loadInfraStatus() {
     }
   } catch {}
 
-  // If local API is offline, label accurately as UNAVAILABLE or LOCAL REPLICA
+  // If live API is unreachable, check if we should render seeded simulation demo
+  const isSimulated = Boolean(currentBlastRadius && currentBlastRadius !== SCENARIOS.current);
+  if (demoTelemetryActive || isSimulated) {
+    if (badgeApi) {
+      badgeApi.textContent = 'SEEDED (DEMO CLUSTER)';
+      badgeApi.className = 'source-pill seeded';
+    }
+    if (countEl) countEl.textContent = '3/3 active [SEEDED]';
+    if (redisEl) {
+      redisEl.textContent = 'Redis Cache: connected [SEEDED]';
+      redisEl.style.color = '#34d399';
+    }
+
+    ['api-1', 'api-2', 'api-3'].forEach(rep => {
+      const el = document.getElementById(`rep-${rep}`);
+      if (el) {
+        el.textContent = `${rep}: HEALTHY`;
+        el.className = 'replica-badge healthy';
+      }
+    });
+
+    if (badgeLb) {
+      badgeLb.textContent = 'SEEDED';
+      badgeLb.className = 'source-pill seeded';
+    }
+    if (failsEl) {
+      failsEl.textContent = 'Passive Fails: 0 [SEEDED]';
+    }
+    if (sourceLabel) {
+      sourceLabel.textContent = '(source: SEEDED fixture, routes: /api/*)';
+    }
+
+    if (barContainer) barContainer.style.display = 'flex';
+    if (talliesContainer) talliesContainer.style.display = 'flex';
+    if (unavailEl) unavailEl.style.display = 'none';
+
+    const counts = SEEDED_TRAFFIC.counts;
+    const total = SEEDED_TRAFFIC.total;
+    ['api-1', 'api-2', 'api-3'].forEach(rep => {
+      const count = counts[rep];
+      const pct = Math.round((count / total) * 100);
+      const bar = document.getElementById(`dist-${rep}`);
+      const tally = document.getElementById(`tally-${rep}`);
+      if (bar) {
+        bar.style.width = `${pct}%`;
+        bar.title = `${rep}: ${count} (${pct}%) [SEEDED]`;
+      }
+      if (tally) {
+        tally.textContent = `${rep}: ${count} (${pct}%)`;
+      }
+    });
+
+    const lbCard = document.querySelector('#tab-load-balancer .infra-card');
+    if (lbCard) {
+      lbCard.setAttribute('title',
+        `[Source: SEEDED]\n` +
+        `Formula: traffic_share(api_i) = requests(api_i) / total_requests × 100%\n` +
+        `Raw Inputs: api-1=41, api-2=40, api-3=39, total=120`
+      );
+    }
+    return;
+  }
+
+  // If local API is offline and not in demo mode, label accurately as UNAVAILABLE
   if (badgeApi) {
-    badgeApi.textContent = 'UNAVAILABLE (COMPOSE OFFLINE)';
+    badgeApi.textContent = 'UNAVAILABLE';
     badgeApi.className = 'source-pill unavailable';
+  }
+  if (badgeLb) {
+    badgeLb.textContent = 'UNAVAILABLE';
+    badgeLb.className = 'source-pill unavailable';
+  }
+  if (failsEl) {
+    failsEl.textContent = 'Passive Fails: --';
   }
   if (countEl) countEl.textContent = '0/3 active (start docker compose)';
   if (redisEl) redisEl.textContent = 'Redis Cache: start docker compose up -d';
 
-  const barContainer = document.getElementById('dist-bar-container');
-  const talliesContainer = document.getElementById('traffic-distribution-tallies');
-  const unavailEl = document.getElementById('traffic-distribution-unavailable');
   if (barContainer) barContainer.style.display = 'none';
   if (talliesContainer) talliesContainer.style.display = 'none';
   if (unavailEl) {
@@ -708,8 +810,11 @@ async function loadInfraStatus() {
     unavailEl.innerHTML = `
       <div class="empty-state" style="padding: 1rem 0.5rem;">
         <div class="empty-state-title" style="color: #f87171;">Traffic Distribution Unavailable</div>
-        <div class="empty-state-desc">NGINX reverse proxy and API cluster are unreachable. Start the stack with:</div>
+        <div class="empty-state-desc">NGINX reverse proxy and API cluster are unreachable on this host. Start the stack locally with:</div>
         <code class="empty-state-cmd">docker compose up -d</code>
+        <div style="margin-top: 0.75rem;">
+          <button class="btn" style="font-size: 0.75rem; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; cursor: pointer;" onclick="toggleDemoTelemetry(true)">📊 Preview Demo Telemetry [SEEDED]</button>
+        </div>
       </div>
     `;
   }
@@ -945,7 +1050,7 @@ function updateSelectedContainerView() {
       const memVal = typeof c.memory_bytes === 'number' ? formatBytes(c.memory_bytes) : '<span style="color:#64748b;" title="' + (c.memory_bytes_reason || '') + '">unavail</span>';
       const restartsVal = typeof c.restart_count === 'number' ? c.restart_count : '-';
       const uptimeVal = formatUptime(c.uptime_seconds);
-      const srcVal = `<span class="source-pill ${c.source === 'unavailable' ? 'unavailable' : 'live'}" style="font-size:0.65rem;">${c.source || 'docker-api'}</span>`;
+      const srcVal = `<span class="source-pill ${c.source === 'unavailable' ? 'unavailable' : c.source === 'SEEDED' ? 'seeded' : 'live'}" style="font-size:0.65rem;">${c.source || 'docker-api'}</span>`;
 
       return `
         <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); cursor: pointer;" onclick="inspectContainerRow('${c.service}')">
@@ -1003,6 +1108,39 @@ async function loadContainerMetrics() {
     }
   } catch {}
 
+  const isSimulated = Boolean(currentBlastRadius && currentBlastRadius !== SCENARIOS.current);
+  if (demoTelemetryActive || isSimulated) {
+    lastContainersData = {
+      status: 'ok',
+      source: 'SEEDED',
+      containers: SEEDED_CONTAINERS
+    };
+
+    if (badgeSource) {
+      badgeSource.textContent = 'SEEDED';
+      badgeSource.className = 'source-pill seeded';
+    }
+
+    if (statusText) {
+      statusText.textContent = '8 Compose Containers Monitored [SEEDED]';
+    }
+
+    if (contentEl) contentEl.style.display = 'block';
+    if (unavailEl) unavailEl.style.display = 'none';
+
+    const cardContainers = document.getElementById('card-container-metrics');
+    if (cardContainers) {
+      cardContainers.setAttribute('title',
+        `[Source: SEEDED]\n` +
+        `Formula: Baseline Compose container metrics from local cluster\n` +
+        `Raw Inputs: 8 Compose containers inspected`
+      );
+    }
+
+    updateSelectedContainerView();
+    return;
+  }
+
   // Offline / unreachable fallback
   if (badgeSource) {
     badgeSource.textContent = 'UNAVAILABLE';
@@ -1018,8 +1156,11 @@ async function loadContainerMetrics() {
       <div class="empty-state">
         <div class="empty-state-icon">🐳</div>
         <div class="empty-state-title">No containers reporting</div>
-        <div class="empty-state-desc">Docker Engine telemetry is currently unavailable. Start the stack with:</div>
+        <div class="empty-state-desc">Docker Engine telemetry is currently unavailable on this host. Start the stack locally with:</div>
         <code class="empty-state-cmd">docker compose up -d</code>
+        <div style="margin-top: 0.75rem;">
+          <button class="btn" style="font-size: 0.75rem; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; cursor: pointer;" onclick="toggleDemoTelemetry(true)">🐳 Preview Demo Telemetry [SEEDED]</button>
+        </div>
       </div>
     `;
   }
@@ -1891,6 +2032,8 @@ function initUI() {
     renderOverviewChips();
     renderSavingsBaselineBar();
     renderPipelineStages();
+    loadInfraStatus();
+    loadContainerMetrics();
     const firstSvc = currentBlastRadius.changedServices[0] || currentBlastRadius.affectedServices[0] || 'auth';
     selectService(firstSvc);
   });
