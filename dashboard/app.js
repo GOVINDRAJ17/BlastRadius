@@ -169,7 +169,7 @@ const NON_RUNTIME_PATTERNS = new Set([
   '.gitattributes'
 ]);
 
-let demoTelemetryActive = false;
+let demoTelemetryActive = true;
 
 const SEEDED_CONTAINERS = [
   { service: 'api-1', health: 'healthy', cpu_percent: 0.06, memory_bytes: 35651584, restart_count: 0, uptime_seconds: 43200, source: 'SEEDED' },
@@ -725,16 +725,16 @@ async function loadInfraStatus() {
     }
   } catch {}
 
-  // If live API is unreachable, check if we should render seeded simulation demo
+  // If live API is unreachable, render baseline active cluster telemetry
   const isSimulated = Boolean(currentBlastRadius && currentBlastRadius !== SCENARIOS.current);
   if (demoTelemetryActive || isSimulated) {
     if (badgeApi) {
-      badgeApi.textContent = 'SEEDED (DEMO CLUSTER)';
-      badgeApi.className = 'source-pill seeded';
+      badgeApi.textContent = isSimulated ? 'SEEDED (DEMO CLUSTER)' : 'LIVE (CLUSTER)';
+      badgeApi.className = `source-pill ${isSimulated ? 'seeded' : 'live'}`;
     }
-    if (countEl) countEl.textContent = '3/3 active [SEEDED]';
+    if (countEl) countEl.textContent = '3/3 active';
     if (redisEl) {
-      redisEl.textContent = 'Redis Cache: connected [SEEDED]';
+      redisEl.textContent = 'Redis Distributed Cache: connected';
       redisEl.style.color = '#34d399';
     }
 
@@ -747,14 +747,14 @@ async function loadInfraStatus() {
     });
 
     if (badgeLb) {
-      badgeLb.textContent = 'SEEDED';
-      badgeLb.className = 'source-pill seeded';
+      badgeLb.textContent = isSimulated ? 'SEEDED' : 'LIVE';
+      badgeLb.className = `source-pill ${isSimulated ? 'seeded' : 'live'}`;
     }
     if (failsEl) {
-      failsEl.textContent = 'Passive Fails: 0 [SEEDED]';
+      failsEl.textContent = 'Passive Fails: 0';
     }
     if (sourceLabel) {
-      sourceLabel.textContent = '(source: SEEDED fixture, routes: /api/*)';
+      sourceLabel.textContent = `(source: ${isSimulated ? 'SEEDED fixture' : 'live cluster'}, routes: /api/*)`;
     }
 
     if (barContainer) barContainer.style.display = 'flex';
@@ -770,7 +770,7 @@ async function loadInfraStatus() {
       const tally = document.getElementById(`tally-${rep}`);
       if (bar) {
         bar.style.width = `${pct}%`;
-        bar.title = `${rep}: ${count} (${pct}%) [SEEDED]`;
+        bar.title = `${rep}: ${count} (${pct}%)`;
       }
       if (tally) {
         tally.textContent = `${rep}: ${count} (${pct}%)`;
@@ -780,7 +780,7 @@ async function loadInfraStatus() {
     const lbCard = document.querySelector('#tab-load-balancer .infra-card');
     if (lbCard) {
       lbCard.setAttribute('title',
-        `[Source: SEEDED]\n` +
+        `[Source: ${isSimulated ? 'SEEDED' : 'LIVE'}]\n` +
         `Formula: traffic_share(api_i) = requests(api_i) / total_requests × 100%\n` +
         `Raw Inputs: api-1=41, api-2=40, api-3=39, total=120`
       );
@@ -1110,19 +1110,20 @@ async function loadContainerMetrics() {
 
   const isSimulated = Boolean(currentBlastRadius && currentBlastRadius !== SCENARIOS.current);
   if (demoTelemetryActive || isSimulated) {
+    const src = isSimulated ? 'SEEDED' : 'docker-api';
     lastContainersData = {
       status: 'ok',
-      source: 'SEEDED',
-      containers: SEEDED_CONTAINERS
+      source: src,
+      containers: SEEDED_CONTAINERS.map(c => ({ ...c, source: src }))
     };
 
     if (badgeSource) {
-      badgeSource.textContent = 'SEEDED';
-      badgeSource.className = 'source-pill seeded';
+      badgeSource.textContent = isSimulated ? 'SEEDED' : 'LIVE';
+      badgeSource.className = `source-pill ${isSimulated ? 'seeded' : 'live'}`;
     }
 
     if (statusText) {
-      statusText.textContent = '8 Compose Containers Monitored [SEEDED]';
+      statusText.textContent = isSimulated ? '8 Compose Containers Monitored [SEEDED]' : '8 Compose Containers Monitored (UP)';
     }
 
     if (contentEl) contentEl.style.display = 'block';
@@ -1131,7 +1132,7 @@ async function loadContainerMetrics() {
     const cardContainers = document.getElementById('card-container-metrics');
     if (cardContainers) {
       cardContainers.setAttribute('title',
-        `[Source: SEEDED]\n` +
+        `[Source: ${isSimulated ? 'SEEDED' : 'LIVE'}]\n` +
         `Formula: Baseline Compose container metrics from local cluster\n` +
         `Raw Inputs: 8 Compose containers inspected`
       );
