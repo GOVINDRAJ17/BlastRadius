@@ -10,11 +10,49 @@ const path = require('path');
 const SUPABASE_URL = (process.env.SUPABASE_URL || 'https://vjpbunykjtuixiprdaud.supabase.co').replace(/\/$/, '');
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
 
+function getLocalRuns() {
+  const candidatePaths = [
+    path.join(__dirname, '..', 'metrics-history.json'),
+    path.join(__dirname, '..', 'dashboard', 'metrics-history.json'),
+    path.join(process.cwd(), 'metrics-history.json'),
+    path.join(process.cwd(), 'dashboard', 'metrics-history.json')
+  ];
+
+  for (const p of candidatePaths) {
+    try {
+      if (fs.existsSync(p)) {
+        const raw = JSON.parse(fs.readFileSync(p, 'utf-8'));
+        if (raw && Array.isArray(raw.runs)) {
+          return { source: 'local-file', runs: raw.runs, summary: raw.summary || {} };
+        }
+      }
+    } catch {}
+  }
+
+  // Also try direct require as static bundle fallback
+  try {
+    const bundleData = require('../dashboard/metrics-history.json');
+    if (bundleData && Array.isArray(bundleData.runs)) {
+      return { source: 'local-file', runs: bundleData.runs, summary: bundleData.summary || {} };
+    }
+  } catch {}
+
+  return { source: 'empty', runs: [], summary: {} };
+}
+
 module.exports = async function handler(req, res) {
   // Set CORS and Cache-Control headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
+  // If Supabase key is not configured, gracefully serve local metrics history
+  if (!SUPABASE_KEY) {
+    const local = getLocalRuns();
+    res.statusCode = 200;
+    res.end(JSON.stringify(local));
+    return;
+  }
 
   try {
     const url = new URL(`${SUPABASE_URL}/rest/v1/ci_runs?select=*&order=created_at.desc&limit=30`);
@@ -73,21 +111,14 @@ module.exports = async function handler(req, res) {
     }));
   } catch (err) {
     // Fallback to local metrics-history.json if Supabase is unreachable
-    try {
-      const localPath = path.join(process.cwd(), 'metrics-history.json');
-      if (fs.existsSync(localPath)) {
-        const localData = JSON.parse(fs.readFileSync(localPath, 'utf-8'));
-        res.statusCode = 200;
-        res.end(JSON.stringify({
-          source: 'local-fallback',
-          runs: localData.runs || [],
-          summary: localData.summary || {}
-        }));
-        return;
-      }
-    } catch {}
+    const local = getLocalRuns();
+    if (local.runs && local.runs.length > 0) {
+      res.statusCode = 200;
+      res.end(JSON.stringify(local));
+      return;
+    }
 
-    res.statusCode = 500;
-    res.end(JSON.stringify({ error: err.message, runs: [] }));
+    res.statusCode = 200;
+    res.end(JSON.stringify({ source: 'fallback-empty', runs: [], error: err.message }));
   }
 };
