@@ -1,150 +1,79 @@
 {
-  "commit_sha": "42a7eb5c5baf3b2a13a96b8ec0397f672d22019c",
-  "base_ref": "HEAD~1",
+  "commit_sha": "a8319c058bb24b3b9fecf9805b13cae1057fcc7f",
+  "base_ref": "HEAD",
   "changed_files": [
-    ".env.example",
-    "README.md",
-    "dashboard/app.js",
-    "dashboard/index.html",
-    "docker-compose.yml",
-    "infrastructure/prometheus/prometheus.yml",
-    "services/api/containers.js",
-    "services/api/index.js",
-    "services/api/test/index.test.js"
+    "services/search/index.js"
   ],
-  "changed_services": [],
-  "changed_infrastructure": [
-    "api"
+  "changed_services": [
+    "search"
   ],
-  "directly_affected": [],
-  "transitively_affected": [
-    "auth",
-    "notifications",
-    "payments",
-    "search",
-    "shared"
+  "changed_infrastructure": [],
+  "directly_affected": [
+    "search"
   ],
+  "transitively_affected": [],
   "tested": [
-    "auth",
-    "notifications",
-    "payments",
-    "search",
-    "shared"
+    "search"
   ],
   "to_build": [
-    "auth",
-    "notifications",
-    "payments",
-    "search",
-    "shared"
+    "search"
   ],
   "to_deploy": [
+    "search"
+  ],
+  "skipped": [
     "auth",
     "notifications",
     "payments",
-    "search",
     "shared"
   ],
-  "skipped": [],
-  "full_rebuild": true,
-  "full_rebuild_reason": "Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
+  "full_rebuild": false,
+  "full_rebuild_reason": null,
   "causal_paths": {
-    "auth": [
-      "root",
-      "auth"
-    ],
-    "notifications": [
-      "root",
-      "notifications"
-    ],
-    "payments": [
-      "root",
-      "payments"
-    ],
     "search": [
-      "root",
       "search"
-    ],
-    "shared": [
-      "root",
-      "shared"
     ]
   },
-  "timestamp": "2026-11-12T19:01:56.509Z",
-  "commitSha": "42a7eb5",
+  "timestamp": "2026-11-16T14:13:06.140Z",
+  "commitSha": "a8319c0",
   "branch": "master",
-  "commitMessage": "feat(metrics): wire real container metrics from cAdvisor and Docker socket into dashboard",
+  "commitMessage": "fix(dashboard): correct load balancer offline badge and add seeded demo telemetry support",
   "totalServices": 5,
-  "changedServices": [],
+  "changedServices": [
+    "search"
+  ],
   "affectedServices": [
+    "search"
+  ],
+  "skippedServices": [
     "auth",
     "notifications",
     "payments",
-    "search",
     "shared"
   ],
-  "skippedServices": [],
   "changedFiles": [
-    ".env.example",
-    "README.md",
-    "dashboard/app.js",
-    "dashboard/index.html",
-    "docker-compose.yml",
-    "infrastructure/prometheus/prometheus.yml",
-    "services/api/containers.js",
-    "services/api/index.js",
-    "services/api/test/index.test.js"
+    "services/search/index.js"
   ],
   "fileDetailsByService": {
-    "api": [
-      "services/api/containers.js",
-      "services/api/index.js",
-      "services/api/test/index.test.js"
+    "search": [
+      "services/search/index.js"
     ]
   },
-  "globalFiles": [
-    ".env.example",
-    "README.md",
-    "dashboard/app.js",
-    "dashboard/index.html",
-    "docker-compose.yml",
-    "infrastructure/prometheus/prometheus.yml"
-  ],
+  "globalFiles": [],
   "explanations": {
-    "auth": "Included in full rebuild: Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
-    "notifications": "Included in full rebuild: Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
-    "payments": "Included in full rebuild: Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
-    "search": "Included in full rebuild: Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
-    "shared": "Included in full rebuild: Root runtime configuration modified: docker-compose.yml (full rebuild fallback)"
+    "search": "Directly modified in git diff (1 file(s))"
   },
   "impactPaths": {
-    "auth": [
-      "root",
-      "auth"
-    ],
-    "notifications": [
-      "root",
-      "notifications"
-    ],
-    "payments": [
-      "root",
-      "payments"
-    ],
     "search": [
-      "root",
       "search"
-    ],
-    "shared": [
-      "root",
-      "shared"
     ]
   },
   "metrics": {
-    "affectedCount": 5,
-    "skippedCount": 0,
-    "percentSaved": 0,
-    "estimatedTimeSavedMinutes": 0,
-    "estimatedActualTimeMinutes": 12.5,
+    "affectedCount": 1,
+    "skippedCount": 4,
+    "percentSaved": 80,
+    "estimatedTimeSavedMinutes": 10,
+    "estimatedActualTimeMinutes": 2.5,
     "estimatedTotalTimeMinutes": 12.5
   }
 }

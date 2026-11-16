@@ -1,7 +1,9 @@
 /**
  * Search Service
- * Standalone service with NO internal dependencies on other monorepo services.
+ * Internal dependencies: @monorepo/shared (structured logging)
  */
+
+const { logger } = require('../shared/index.js');
 
 const mockCatalog = [
   { id: 'item_1', name: 'Cloud Server Pro', category: 'compute', tags: ['cloud', 'vm', 'linux'] },
@@ -17,6 +19,8 @@ function searchCatalog(query) {
   }
 
   const q = query.toLowerCase().trim();
+  logger.info(`Executing catalog search query: "${q}"`);
+
   return mockCatalog.filter(item => {
     return (
       item.name.toLowerCase().includes(q) ||

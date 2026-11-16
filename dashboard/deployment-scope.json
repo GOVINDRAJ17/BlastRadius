@@ -1,70 +1,36 @@
 {
-  "commit_sha": "42a7eb5c5baf3b2a13a96b8ec0397f672d22019c",
-  "base_ref": "HEAD~1",
+  "commit_sha": "a8319c058bb24b3b9fecf9805b13cae1057fcc7f",
+  "base_ref": "HEAD",
   "changed_files": [
-    ".env.example",
-    "README.md",
-    "dashboard/app.js",
-    "dashboard/index.html",
-    "docker-compose.yml",
-    "infrastructure/prometheus/prometheus.yml",
-    "services/api/containers.js",
-    "services/api/index.js",
-    "services/api/test/index.test.js"
+    "services/search/index.js"
   ],
-  "changed_services": [],
-  "directly_affected": [],
-  "transitively_affected": [
-    "auth",
-    "notifications",
-    "payments",
-    "search",
-    "shared"
+  "changed_services": [
+    "search"
   ],
+  "directly_affected": [
+    "search"
+  ],
+  "transitively_affected": [],
   "tested": [
-    "auth",
-    "notifications",
-    "payments",
-    "search",
-    "shared"
+    "search"
   ],
   "to_build": [
-    "auth",
-    "notifications",
-    "payments",
-    "search",
-    "shared"
+    "search"
   ],
   "to_deploy": [
+    "search"
+  ],
+  "skipped": [
     "auth",
     "notifications",
     "payments",
-    "search",
     "shared"
   ],
-  "skipped": [],
-  "full_rebuild": true,
-  "full_rebuild_reason": "Root runtime configuration modified: docker-compose.yml (full rebuild fallback)",
+  "full_rebuild": false,
+  "full_rebuild_reason": null,
   "causal_paths": {
-    "auth": [
-      "root",
-      "auth"
-    ],
-    "notifications": [
-      "root",
-      "notifications"
-    ],
-    "payments": [
-      "root",
-      "payments"
-    ],
     "search": [
-      "root",
       "search"
-    ],
-    "shared": [
-      "root",
-      "shared"
     ]
   }
 }

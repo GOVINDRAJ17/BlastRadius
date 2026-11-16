@@ -552,14 +552,38 @@
       "percentSaved": 0,
       "timeSavedMinutes": 0,
       "actualTimeMinutes": 12.5
+    },
+    {
+      "runId": "run-mwjcfrpv",
+      "prNumber": null,
+      "commitSha": "local",
+      "author": "dev",
+      "branch": "main",
+      "timestamp": "2026-11-16T14:13:13.363Z",
+      "changedServices": [
+        "search"
+      ],
+      "affectedServices": [
+        "search"
+      ],
+      "skippedServices": [
+        "auth",
+        "notifications",
+        "payments",
+        "shared"
+      ],
+      "totalServices": 5,
+      "percentSaved": 80,
+      "timeSavedMinutes": 10,
+      "actualTimeMinutes": 2.5
     }
   ],
   "summary": {
-    "totalRuns": 24,
-    "totalServicesTested": 53,
-    "totalServicesSkipped": 67,
-    "cumulativeMinutesSaved": 167.5,
-    "cumulativeHoursSaved": 2.79,
-    "overallPercentSaved": 56
+    "totalRuns": 25,
+    "totalServicesTested": 54,
+    "totalServicesSkipped": 71,
+    "cumulativeMinutesSaved": 177.5,
+    "cumulativeHoursSaved": 2.96,
+    "overallPercentSaved": 57
   }
 }

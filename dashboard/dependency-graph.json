@@ -1,6 +1,6 @@
 {
   "version": "2.0.0",
-  "generatedAt": "2026-11-12T19:01:56.115Z",
+  "generatedAt": "2026-11-16T14:13:05.674Z",
   "nodes": [
     "api",
     "auth",
@@ -58,8 +58,10 @@
     },
     "search": {
       "filesParsed": 2,
-      "totalImports": 3,
-      "internalDependencies": []
+      "totalImports": 4,
+      "internalDependencies": [
+        "shared"
+      ]
     },
     "shared": {
       "filesParsed": 2,
@@ -80,7 +82,9 @@
       "auth",
       "shared"
     ],
-    "search": [],
+    "search": [
+      "shared"
+    ],
     "shared": []
   },
   "reverseDependencies": {
@@ -96,7 +100,8 @@
     "shared": [
       "auth",
       "notifications",
-      "payments"
+      "payments",
+      "search"
     ]
   },
   "edges": [
@@ -141,6 +146,13 @@
       "type": "require",
       "specifier": "../../auth/index.js",
       "sourceFile": "services/payments/test/index.test.js"
+    },
+    {
+      "from": "search",
+      "to": "shared",
+      "type": "require",
+      "specifier": "../shared/index.js",
+      "sourceFile": "services/search/index.js"
     }
   ]
 }
